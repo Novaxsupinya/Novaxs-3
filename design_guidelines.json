@@ -1,0 +1,124 @@
+{
+  "identity": {
+    "name": "E1 - The Anti-AI Designer",
+    "mission": "Create a high-conversion, hands-free e-commerce platform that feels premium yet accessible, breaking the generic 'dropshipping site' mold.",
+    "archetype": "Swiss & High-Contrast (Authority, Clarity, Truth)",
+    "tone": "Trustworthy, Efficient, Vibrant, Clear"
+  },
+  "typography": {
+    "headings": {
+      "family": "Manrope, sans-serif",
+      "weights": ["600", "700", "800"],
+      "usage": "Use for all section titles, product names, and hero text. Tight tracking (-0.02em)."
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "Use for descriptions, prices, and UI elements. Normal tracking."
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "Use for order IDs, tracking numbers, and technical specs."
+    }
+  },
+  "colors": {
+    "primary": {
+      "name": "Conversion Orange",
+      "hex": "#F97316",
+      "tailwind": "orange-500",
+      "usage": "Primary CTAs (Add to Cart, Checkout), Sale Badges, Price Highlights."
+    },
+    "secondary": {
+      "name": "Deep Slate",
+      "hex": "#0F172A",
+      "tailwind": "slate-900",
+      "usage": "Headings, Footer Background, Primary Navigation."
+    },
+    "background": {
+      "default": "#FFFFFF",
+      "subtle": "#F8FAFC",
+      "paper": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#64748B",
+      "muted": "#94A3B8"
+    },
+    "status": {
+      "success": "#22C55E",
+      "error": "#EF4444",
+      "warning": "#F59E0B",
+      "info": "#3B82F6"
+    }
+  },
+  "layout": {
+    "spacing_scale": "Generous (2x standard). Use p-6, p-8, p-12 for containers.",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "grid_system": {
+      "hero": "Bento Grid: grid-cols-1 md:grid-cols-12 gap-4. Hero spans 8 cols, secondary spans 4.",
+      "products": "Dense Grid: grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6.",
+      "features": "Asymmetric Grid: Alternating text/image layout with large negative space."
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5",
+      "secondary": "bg-white border-2 border-slate-200 text-slate-900 hover:border-slate-900 font-semibold py-3 px-6 rounded-full transition-colors",
+      "ghost": "text-slate-600 hover:text-orange-500 font-medium transition-colors"
+    },
+    "cards": {
+      "product": "group relative bg-white rounded-xl overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1",
+      "category": "relative overflow-hidden rounded-2xl aspect-[4/5] group cursor-pointer"
+    },
+    "inputs": {
+      "default": "h-12 px-4 rounded-lg border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": "Soft, diffuse shadows: shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+    "borders": "Subtle 1px borders: border-slate-100",
+    "radius": "Rounded-xl (12px) for cards, Rounded-full for buttons",
+    "gradients": "Subtle mesh gradients for hero backgrounds (Orange/Rose/Slate) at 5% opacity"
+  },
+  "media": {
+    "image_style": "Clean studio lighting, minimal background, high contrast product focus.",
+    "icons": "Lucide React (Stroke width 1.5px)",
+    "image_urls": {
+      "categories": {
+        "women": "https://images.unsplash.com/photo-1587987746776-302404b98970?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwbW9kZWwlMjB3b21hbiUyMHN0dWRpbyUyMHBvcnRyYWl0fGVufDB8fHx8MTc3MTI3NjY2NHww&ixlib=rb-4.1.0&q=85",
+        "men": "https://images.unsplash.com/photo-1658860547138-1e28dfb90867?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwbW9kZWwlMjBtYW4lMjBzdHVkaW8lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzEyNzY2Njl8MA&ixlib=rb-4.1.0&q=85",
+        "pets": "https://images.unsplash.com/photo-1588218955664-d18f4e3056e5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHNlYXJjaHwxfHxjdXRlJTIwZG9nJTIwcGxheWluZyUyMHdpdGglMjB0b3l8ZW58MHx8fHwxNzcxMjc2Njc0fDA&ixlib=rb-4.1.0&q=85",
+        "electronics": "https://images.unsplash.com/photo-1761005653885-b3d8b04f47c5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzbGVlayUyMGhlYWRwaG9uZXMlMjBwcm9kdWN0JTIwcGhvdG9ncmFwaHl8ZW58MHx8fHwxNzcxMjc2Njc4fDA&ixlib=rb-4.1.0&q=85",
+        "beauty": "https://images.unsplash.com/photo-1739979054787-719a848cd684?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBza2luY2FyZSUyMGJlYXV0eSUyMHByb2R1Y3RzJTIwZGlzcGxheXxlbnwwfHx8fDE3NzEyNzY2ODN8MA&ixlib=rb-4.1.0&q=85",
+        "outdoor": "https://images.unsplash.com/photo-1718953584662-27bfbd08aef3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwxfHxoaWtpbmclMjBiYWNrcGFjayUyMG91dGRvb3IlMjBhZHZlbnR1cmUlMjBuYXR1cmV8ZW58MHx8fHwxNzcxMjc2Njk5fDA&ixlib=rb-4.1.0&q=85"
+      }
+    }
+  },
+  "motion": {
+    "hover": "transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg",
+    "fade_in": "animate-in fade-in duration-500 slide-in-from-bottom-4",
+    "stagger": "stagger-children-100"
+  },
+  "accessibility": {
+    "contrast": "Ensure 4.5:1 contrast ratio for all text.",
+    "focus": "Visible focus rings on all interactive elements (ring-2 ring-orange-500).",
+    "aria": "Use aria-labels for icon-only buttons."
+  },
+  "instructions_to_main_agent": [
+    "Use the 'Bento Grid' layout for the Hero section to showcase multiple categories at once.",
+    "Implement a 'Sticky' header with a prominent Search Bar (Amazon style).",
+    "Product Cards must focus on the Image first, then Price (Bold Orange), then Title.",
+    "Use 'Sonner' for all toast notifications (Add to Cart success, etc.).",
+    "Ensure the 'Checkout' flow is distraction-free (remove navigation, simple footer).",
+    "Use the provided image URLs for category placeholders.",
+    "Do NOT use generic 'Lorem Ipsum' - use realistic product names and descriptions.",
+    "For the 'Hands-Free' aspect, visualize the process with a simple 3-step diagram in the 'About' or 'How it Works' section."
+  ],
+  "universal_guidelines": [
+    "Avoid 'AI Slop' - no generic centered layouts.",
+    "Use 2-3x more spacing than typical designs.",
+    "Every interaction needs a micro-animation.",
+    "Use 'data-testid' for all interactive elements.",
+    "Prioritize Shadcn components but customize them to match the 'Orange/Slate' theme."
+  ]
+}
