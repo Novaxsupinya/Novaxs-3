@@ -609,7 +609,7 @@ async def get_cart(cart_id: str):
     cart = await db.carts.find_one({"id": cart_id}, {"_id": 0})
     if not cart:
         cart = {"id": cart_id, "items": [], "subtotal": 0.0, "created_at": datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc).isoformat()}
-        await db.carts.insert_one(cart)
+        await db.carts.insert_one(dict(cart))  # Insert a copy to avoid _id mutation
     
     # Populate product details
     for item in cart.get("items", []):
@@ -617,6 +617,8 @@ async def get_cart(cart_id: str):
         if product:
             item["product"] = product
     
+    # Remove _id if present
+    cart.pop("_id", None)
     return cart
 
 @api_router.post("/cart/{cart_id}/items")
