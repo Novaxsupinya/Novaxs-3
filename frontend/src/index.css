@@ -232,11 +232,21 @@
 
 /* Badge styles */
 .badge-sale {
-    @apply bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full;
+    background-color: #F97316;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
 }
 
 .badge-new {
-    @apply bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full;
+    background-color: #22C55E;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
 }
 
 /* Price styles */
