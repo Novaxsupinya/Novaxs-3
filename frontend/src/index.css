@@ -251,25 +251,39 @@
 
 /* Price styles */
 .price-current {
-    @apply text-orange-500 font-bold;
+    color: #F97316;
+    font-weight: 700;
 }
 
 .price-compare {
-    @apply text-slate-400 line-through text-sm;
+    color: #94A3B8;
+    text-decoration: line-through;
+    font-size: 0.875rem;
 }
 
 /* Rating stars */
 .star-filled {
-    @apply text-amber-400;
+    color: #FBBF24;
 }
 
 .star-empty {
-    @apply text-slate-200;
+    color: #E2E8F0;
 }
 
 /* Loading skeleton */
 .skeleton {
-    @apply animate-pulse bg-slate-200 rounded;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background-color: #E2E8F0;
+    border-radius: 0.375rem;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* Glass morphism */
