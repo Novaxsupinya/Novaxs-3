@@ -1852,6 +1852,7 @@ function App() {
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/order-confirmation/:id" element={<OrderConfirmationPage />} />
               <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route path="/admin" element={<AdminDashboard />} />
             </Routes>
           </main>
