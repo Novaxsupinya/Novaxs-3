@@ -24,7 +24,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Create the main app
-app = FastAPI(title="HandsFree E-commerce API")
+app = FastAPI(title="Novaxs E-commerce API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
