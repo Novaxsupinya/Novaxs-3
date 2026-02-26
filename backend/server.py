@@ -14,6 +14,8 @@ import httpx
 import jwt
 import bcrypt
 import json
+import asyncio
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -33,6 +35,8 @@ api_router = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 JWT_SECRET = os.environ.get('JWT_SECRET', 'handsfree-ecommerce-secret-key-2024')
 JWT_ALGORITHM = "HS256"
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'novaxs6969@gmail.com')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'NovaxsAdmin2024!')
 
 # CJ Dropshipping Configuration
 CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1"
@@ -42,6 +46,12 @@ CJ_API_KEY = os.environ.get('CJ_API_KEY', '')
 PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '')
 PAYPAL_SECRET = os.environ.get('PAYPAL_SECRET', '')
 PAYPAL_BASE_URL = os.environ.get('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com')
+
+# Resend Email Configuration
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
