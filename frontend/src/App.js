@@ -1057,6 +1057,322 @@ const ProductDetailPage = () => {
   );
 };
 
+// Product Reviews Component
+const ProductReviews = ({ productId }) => {
+  const { user } = useApp();
+  const [reviews, setReviews] = useState([]);
+  const [distribution, setDistribution] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newReview, setNewReview] = useState({ rating: 5, title: "", comment: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [productId]);
+
+  const fetchReviews = async () => {
+    try {
+      const res = await axios.get(`${API}/products/${productId}/reviews`);
+      setReviews(res.data.reviews);
+      setDistribution(res.data.distribution);
+    } catch (e) {
+      console.error("Error fetching reviews:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(`${API}/products/${productId}/reviews`, {
+        product_id: productId,
+        ...newReview
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      toast.success("Review submitted!");
+      setShowForm(false);
+      setNewReview({ rating: 5, title: "", comment: "" });
+      fetchReviews();
+    } catch (e) {
+      toast.error("Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const markHelpful = async (reviewId) => {
+    try {
+      await axios.post(`${API}/reviews/${reviewId}/helpful`);
+      toast.success("Marked as helpful");
+      fetchReviews();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : 0;
+
+  return (
+    <div className="mt-16 border-t pt-12" data-testid="product-reviews">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold">Customer Reviews</h2>
+        <Button onClick={() => setShowForm(!showForm)} className="bg-orange-500 hover:bg-orange-600">
+          Write a Review
+        </Button>
+      </div>
+
+      {/* Review Form */}
+      {showForm && (
+        <form onSubmit={submitReview} className="bg-slate-50 rounded-xl p-6 mb-8">
+          <h3 className="font-semibold mb-4">Write Your Review</h3>
+          <div className="mb-4">
+            <Label>Rating</Label>
+            <div className="flex gap-2 mt-2">
+              {[1,2,3,4,5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setNewReview({ ...newReview, rating: star })}
+                  className="focus:outline-none"
+                >
+                  <Star className={`w-8 h-8 ${star <= newReview.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mb-4">
+            <Label>Title</Label>
+            <Input 
+              value={newReview.title}
+              onChange={(e) => setNewReview({ ...newReview, title: e.target.value })}
+              placeholder="Summarize your review"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <Label>Review</Label>
+            <textarea
+              value={newReview.comment}
+              onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+              placeholder="Share your experience with this product"
+              className="w-full h-32 p-3 border rounded-lg focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+              required
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={submitting} className="bg-orange-500 hover:bg-orange-600">
+              {submitting ? "Submitting..." : "Submit Review"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+          </div>
+        </form>
+      )}
+
+      {/* Reviews Summary */}
+      <div className="grid md:grid-cols-3 gap-8 mb-8">
+        <div className="text-center p-6 bg-slate-50 rounded-xl">
+          <p className="text-5xl font-bold text-orange-500">{avgRating}</p>
+          <div className="flex justify-center gap-1 my-2">
+            {[1,2,3,4,5].map((star) => (
+              <Star key={star} className={`w-5 h-5 ${star <= Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+            ))}
+          </div>
+          <p className="text-slate-500">{reviews.length} reviews</p>
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          {[5,4,3,2,1].map((star) => (
+            <div key={star} className="flex items-center gap-3">
+              <span className="w-8 text-sm">{star} ★</span>
+              <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-amber-400 rounded-full"
+                  style={{ width: `${reviews.length > 0 ? (distribution[star] || 0) / reviews.length * 100 : 0}%` }}
+                />
+              </div>
+              <span className="w-8 text-sm text-slate-500">{distribution[star] || 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reviews List */}
+      {loading ? (
+        <div className="space-y-4">
+          {[1,2,3].map((i) => <div key={i} className="h-32 skeleton rounded-xl" />)}
+        </div>
+      ) : reviews.length > 0 ? (
+        <div className="space-y-6">
+          {reviews.map((review) => (
+            <div key={review.id} className="border-b pb-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[1,2,3,4,5].map((star) => (
+                        <Star key={star} className={`w-4 h-4 ${star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                      ))}
+                    </div>
+                    {review.verified_purchase && (
+                      <Badge className="bg-green-100 text-green-700 text-xs">Verified Purchase</Badge>
+                    )}
+                  </div>
+                  <h4 className="font-semibold mt-2">{review.title}</h4>
+                </div>
+                <span className="text-sm text-slate-500">{new Date(review.created_at).toLocaleDateString()}</span>
+              </div>
+              <p className="text-slate-600 mt-2">{review.comment}</p>
+              <div className="flex items-center gap-4 mt-3">
+                <span className="text-sm text-slate-500">By {review.user_name}</span>
+                <button 
+                  onClick={() => markHelpful(review.id)}
+                  className="text-sm text-slate-500 hover:text-orange-500"
+                >
+                  Helpful ({review.helpful_count})
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-slate-500 py-8">No reviews yet. Be the first to review this product!</p>
+      )}
+    </div>
+  );
+};
+
+// Contact Page
+const ContactPage = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    order_number: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await axios.post(`${API}/contact`, formData);
+      toast.success("Message sent! We'll get back to you soon.");
+      setSubmitted(true);
+    } catch (e) {
+      toast.error("Failed to send message");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Check className="w-10 h-10 text-green-600" />
+        </div>
+        <h1 className="text-3xl font-bold mb-4">Message Sent!</h1>
+        <p className="text-slate-600 mb-8">Thank you for contacting us. We'll respond within 24 hours.</p>
+        <Link to="/">
+          <Button className="bg-orange-500 hover:bg-orange-600">Continue Shopping</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-12" data-testid="contact-page">
+      <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
+      <p className="text-slate-600 mb-8">Have a question? We're here to help!</p>
+
+      <div className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2">
+          <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Name</Label>
+                <Input 
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input 
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Order Number (optional)</Label>
+              <Input 
+                value={formData.order_number}
+                onChange={(e) => setFormData({ ...formData, order_number: e.target.value })}
+                placeholder="NVX..."
+              />
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Select value={formData.subject} onValueChange={(v) => setFormData({ ...formData, subject: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a topic" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Order Status">Order Status</SelectItem>
+                  <SelectItem value="Shipping & Delivery">Shipping & Delivery</SelectItem>
+                  <SelectItem value="Returns & Refunds">Returns & Refunds</SelectItem>
+                  <SelectItem value="Product Question">Product Question</SelectItem>
+                  <SelectItem value="Technical Issue">Technical Issue</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Message</Label>
+              <textarea
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                className="w-full h-32 p-3 border rounded-lg focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
+              {loading ? "Sending..." : "Send Message"}
+            </Button>
+          </form>
+        </div>
+
+        <div className="space-y-6">
+          <div className="bg-slate-50 rounded-xl p-6">
+            <h3 className="font-semibold mb-3">Shipping & Product Issues</h3>
+            <p className="text-sm text-slate-600">For shipping, returns, or product quality issues, our fulfillment partner handles these directly.</p>
+          </div>
+          <div className="bg-slate-50 rounded-xl p-6">
+            <h3 className="font-semibold mb-3">Response Time</h3>
+            <p className="text-sm text-slate-600">We typically respond within 24 hours during business days.</p>
+          </div>
+          <div className="bg-orange-50 rounded-xl p-6">
+            <h3 className="font-semibold mb-3 text-orange-700">Email Us Directly</h3>
+            <p className="text-sm text-orange-600">novaxs6969@gmail.com</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Checkout Page
 const CheckoutPage = () => {
   const { cart, user, fetchCart } = useApp();
