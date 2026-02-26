@@ -740,7 +740,7 @@ const HomePage = () => {
       {/* How It Works */}
       <section className="bg-slate-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">How Hands-Free Works</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">How Novaxs Works</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { step: "01", title: "Shop & Checkout", desc: "Browse our curated collection and pay securely with PayPal." },
