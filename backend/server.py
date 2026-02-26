@@ -1049,6 +1049,275 @@ async def paypal_webhook(request: dict, background_tasks: BackgroundTasks):
     
     return {"status": "received"}
 
+# ============ Email Service ============
+
+async def send_email(to_email: str, subject: str, html_content: str):
+    """Send email using Resend"""
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured, skipping email")
+        return None
+    
+    try:
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content
+        }
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Email sent to {to_email}: {email.get('id')}")
+        return email
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
+        return None
+
+async def send_order_confirmation(order: dict):
+    """Send order confirmation email"""
+    shipping = order.get("shipping_address", {})
+    items_html = "".join([
+        f"<tr><td style='padding:8px;border-bottom:1px solid #eee;'>{item['name']}</td><td style='padding:8px;border-bottom:1px solid #eee;'>x{item['quantity']}</td><td style='padding:8px;border-bottom:1px solid #eee;'>${item['price']:.2f}</td></tr>"
+        for item in order.get("items", [])
+    ])
+    
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#F97316;color:white;padding:20px;text-align:center;">
+            <h1 style="margin:0;">Novaxs</h1>
+        </div>
+        <div style="padding:30px;background:#fff;">
+            <h2 style="color:#0F172A;">Order Confirmed! 🎉</h2>
+            <p>Thank you for your order, {shipping.get('name', 'Customer')}!</p>
+            <p><strong>Order Number:</strong> {order.get('order_number')}</p>
+            <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+                <thead><tr style="background:#f8f8f8;"><th style="padding:10px;text-align:left;">Item</th><th style="padding:10px;">Qty</th><th style="padding:10px;">Price</th></tr></thead>
+                <tbody>{items_html}</tbody>
+            </table>
+            <div style="background:#f8f8f8;padding:15px;border-radius:8px;">
+                <p style="margin:5px 0;"><strong>Subtotal:</strong> ${order.get('subtotal', 0):.2f}</p>
+                <p style="margin:5px 0;"><strong>Shipping:</strong> ${order.get('shipping_cost', 0):.2f}</p>
+                <p style="margin:5px 0;"><strong>Tax:</strong> ${order.get('tax', 0):.2f}</p>
+                <p style="margin:5px 0;font-size:18px;"><strong>Total:</strong> <span style="color:#F97316;">${order.get('total', 0):.2f}</span></p>
+            </div>
+            <div style="margin-top:20px;padding:15px;background:#f0f9ff;border-radius:8px;">
+                <h3 style="margin:0 0 10px 0;">Shipping To:</h3>
+                <p style="margin:0;">{shipping.get('name')}<br>{shipping.get('address')}<br>{shipping.get('city')}, {shipping.get('state')} {shipping.get('zip_code')}</p>
+            </div>
+        </div>
+        <div style="background:#0F172A;color:#94A3B8;padding:20px;text-align:center;font-size:12px;">
+            <p>© 2024 Novaxs. All rights reserved.</p>
+        </div>
+    </div>
+    """
+    
+    await send_email(shipping.get('email'), f"Order Confirmed - {order.get('order_number')}", html)
+    # Also notify admin
+    await send_email(ADMIN_EMAIL, f"New Order - {order.get('order_number')}", html)
+
+async def send_shipping_notification(order: dict, tracking_number: str):
+    """Send shipping notification email"""
+    shipping = order.get("shipping_address", {})
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#F97316;color:white;padding:20px;text-align:center;">
+            <h1 style="margin:0;">Novaxs</h1>
+        </div>
+        <div style="padding:30px;background:#fff;">
+            <h2 style="color:#0F172A;">Your Order Has Shipped! 📦</h2>
+            <p>Great news, {shipping.get('name', 'Customer')}! Your order is on its way.</p>
+            <div style="background:#f0f9ff;padding:20px;border-radius:8px;text-align:center;margin:20px 0;">
+                <p style="margin:0;font-size:14px;color:#64748B;">Tracking Number</p>
+                <p style="margin:10px 0;font-size:24px;font-weight:bold;color:#0F172A;">{tracking_number}</p>
+            </div>
+            <p><strong>Order Number:</strong> {order.get('order_number')}</p>
+        </div>
+        <div style="background:#0F172A;color:#94A3B8;padding:20px;text-align:center;font-size:12px;">
+            <p>© 2024 Novaxs. All rights reserved.</p>
+        </div>
+    </div>
+    """
+    await send_email(shipping.get('email'), f"Your Order Has Shipped - {order.get('order_number')}", html)
+
+# ============ Admin Routes ============
+
+class AdminLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class ProductCreate(BaseModel):
+    name: str
+    description: str
+    category: str
+    image: str
+    price: float
+    compare_price: Optional[float] = None
+    inventory: int = 100
+    tags: List[str] = []
+
+async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify admin token"""
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Admin authentication required")
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if not payload.get("is_admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+        return payload
+    except:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+
+@api_router.post("/admin/login")
+async def admin_login(credentials: AdminLogin):
+    """Admin login"""
+    if credentials.email == ADMIN_EMAIL and credentials.password == ADMIN_PASSWORD:
+        token = jwt.encode({
+            "email": credentials.email,
+            "is_admin": True,
+            "exp": datetime.now(timezone.utc) + timedelta(days=7)
+        }, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        return {"access_token": token, "token_type": "bearer"}
+    raise HTTPException(status_code=401, detail="Invalid admin credentials")
+
+@api_router.get("/admin/dashboard")
+async def admin_dashboard(admin=Depends(get_admin_user)):
+    """Admin dashboard stats"""
+    total_orders = await db.orders.count_documents({})
+    total_products = await db.products.count_documents({})
+    total_users = await db.users.count_documents({})
+    
+    # Revenue calculation
+    pipeline = [
+        {"$match": {"payment_status": "paid"}},
+        {"$group": {"_id": None, "total": {"$sum": "$total"}}}
+    ]
+    revenue_result = await db.orders.aggregate(pipeline).to_list(1)
+    total_revenue = revenue_result[0]["total"] if revenue_result else 0
+    
+    # Recent orders
+    recent_orders = await db.orders.find({}, {"_id": 0}).sort("created_at", -1).limit(10).to_list(10)
+    
+    # Orders by status
+    status_pipeline = [{"$group": {"_id": "$status", "count": {"$sum": 1}}}]
+    status_counts = await db.orders.aggregate(status_pipeline).to_list(10)
+    orders_by_status = {item["_id"]: item["count"] for item in status_counts}
+    
+    return {
+        "stats": {
+            "total_orders": total_orders,
+            "total_products": total_products,
+            "total_users": total_users,
+            "total_revenue": round(total_revenue, 2)
+        },
+        "orders_by_status": orders_by_status,
+        "recent_orders": recent_orders
+    }
+
+@api_router.get("/admin/orders")
+async def admin_get_orders(
+    admin=Depends(get_admin_user),
+    status: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20
+):
+    """Get all orders for admin"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    skip = (page - 1) * limit
+    orders = await db.orders.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.orders.count_documents(query)
+    
+    return {"orders": orders, "total": total, "page": page, "limit": limit}
+
+@api_router.put("/admin/orders/{order_id}/status")
+async def admin_update_order_status(order_id: str, status: str, tracking_number: Optional[str] = None, admin=Depends(get_admin_user)):
+    """Update order status"""
+    update = {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
+    if tracking_number:
+        update["tracking_number"] = tracking_number
+    
+    result = await db.orders.update_one({"id": order_id}, {"$set": update})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Send shipping notification if shipped
+    if status == "shipped" and tracking_number:
+        order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+        if order:
+            asyncio.create_task(send_shipping_notification(order, tracking_number))
+    
+    return {"message": "Order updated", "status": status}
+
+@api_router.get("/admin/products")
+async def admin_get_products(admin=Depends(get_admin_user), page: int = 1, limit: int = 50):
+    """Get all products for admin"""
+    skip = (page - 1) * limit
+    products = await db.products.find({}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.products.count_documents({})
+    return {"products": products, "total": total, "page": page}
+
+@api_router.post("/admin/products")
+async def admin_create_product(product: ProductCreate, admin=Depends(get_admin_user)):
+    """Create new product"""
+    product_dict = product.model_dump()
+    product_dict["id"] = str(uuid.uuid4())
+    product_dict["images"] = [product.image]
+    product_dict["variants"] = []
+    product_dict["rating"] = 4.5
+    product_dict["reviews_count"] = 0
+    product_dict["is_active"] = True
+    product_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.products.insert_one(product_dict)
+    product_dict.pop("_id", None)
+    return product_dict
+
+@api_router.put("/admin/products/{product_id}")
+async def admin_update_product(product_id: str, updates: dict, admin=Depends(get_admin_user)):
+    """Update product"""
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    updates.pop("id", None)
+    updates.pop("_id", None)
+    
+    result = await db.products.update_one({"id": product_id}, {"$set": updates})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"message": "Product updated"}
+
+@api_router.delete("/admin/products/{product_id}")
+async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
+    """Delete product"""
+    result = await db.products.delete_one({"id": product_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return {"message": "Product deleted"}
+
+@api_router.post("/admin/sync-cj-products")
+async def admin_sync_cj_products(keyword: str = "", limit: int = 50, admin=Depends(get_admin_user), background_tasks: BackgroundTasks = None):
+    """Sync products from CJ Dropshipping"""
+    if background_tasks:
+        background_tasks.add_task(sync_products_from_cj, keyword, limit)
+    return {"message": "Product sync started", "keyword": keyword, "limit": limit}
+
+@api_router.post("/admin/send-test-email")
+async def admin_send_test_email(admin=Depends(get_admin_user)):
+    """Send test email to admin"""
+    html = """
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#F97316;color:white;padding:20px;text-align:center;">
+            <h1 style="margin:0;">Novaxs</h1>
+        </div>
+        <div style="padding:30px;background:#fff;text-align:center;">
+            <h2>Email Configuration Successful! ✅</h2>
+            <p>Your Novaxs email notifications are working correctly.</p>
+        </div>
+    </div>
+    """
+    result = await send_email(ADMIN_EMAIL, "Novaxs - Email Test Successful", html)
+    if result:
+        return {"message": f"Test email sent to {ADMIN_EMAIL}", "email_id": result.get("id")}
+    return {"message": "Email not configured - add RESEND_API_KEY to .env"}
+
 # Include the router
 app.include_router(api_router)
 
