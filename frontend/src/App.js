@@ -1050,6 +1050,9 @@ const ProductDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Reviews Section */}
+      <ProductReviews productId={product.id} />
     </div>
   );
 };
