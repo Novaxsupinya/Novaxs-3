@@ -618,8 +618,8 @@ const HomePage = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8 text-white">
               <Badge className="bg-orange-500 mb-4">NEW COLLECTION</Badge>
-              <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Hands-Free Shopping Experience</h2>
-              <p className="text-white/80 mb-6 max-w-xl">Discover amazing products with automated fulfillment. Your purchase, our priority.</p>
+              <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Discover Amazing Deals</h2>
+              <p className="text-white/80 mb-6 max-w-xl">Shop the latest trends with fast worldwide shipping. Quality products, unbeatable prices.</p>
               <Link to="/products?category=womens-fashion">
                 <Button className="bg-orange-500 hover:bg-orange-600 rounded-full px-8 h-12 text-base font-semibold" data-testid="shop-now-btn">
                   Shop Now <ChevronRight className="w-5 h-5 ml-1" />
