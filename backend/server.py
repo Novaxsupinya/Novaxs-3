@@ -1333,6 +1333,12 @@ async def admin_sync_cj_products(keyword: str = "", limit: int = 50, admin=Depen
 @api_router.post("/admin/send-test-email")
 async def admin_send_test_email(admin=Depends(get_admin_user)):
     """Send test email to admin"""
+    api_key = os.environ.get('RESEND_API_KEY', '')
+    admin_email = os.environ.get('ADMIN_EMAIL', 'novaxs6969@gmail.com')
+    
+    if not api_key:
+        return {"message": "Email not configured - add RESEND_API_KEY to .env", "api_key_found": False}
+    
     html = """
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <div style="background:#F97316;color:white;padding:20px;text-align:center;">
@@ -1344,10 +1350,10 @@ async def admin_send_test_email(admin=Depends(get_admin_user)):
         </div>
     </div>
     """
-    result = await send_email(ADMIN_EMAIL, "Novaxs - Email Test Successful", html)
+    result = await send_email(admin_email, "Novaxs - Email Test Successful", html)
     if result:
-        return {"message": f"Test email sent to {ADMIN_EMAIL}", "email_id": result.get("id")}
-    return {"message": "Email not configured - add RESEND_API_KEY to .env"}
+        return {"message": f"Test email sent to {admin_email}", "email_id": result.get("id")}
+    return {"message": "Email send failed - check API key", "api_key_found": True}
 
 # ============ Reviews Routes ============
 
