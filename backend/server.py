@@ -1347,13 +1347,14 @@ async def admin_send_test_email(admin=Depends(get_admin_user)):
         <div style="padding:30px;background:#fff;text-align:center;">
             <h2>Email Configuration Successful! ✅</h2>
             <p>Your Novaxs email notifications are working correctly.</p>
+            <p style="color:#666;font-size:14px;margin-top:20px;">Note: In test mode, emails go to your Resend verified email. Verify a domain at resend.com/domains to send to customers.</p>
         </div>
     </div>
     """
     result = await send_email(admin_email, "Novaxs - Email Test Successful", html)
     if result:
         return {"message": f"Test email sent to {admin_email}", "email_id": result.get("id")}
-    return {"message": "Email send failed - check API key", "api_key_found": True}
+    return {"message": "Email in TEST MODE - verify domain at resend.com/domains to send to customers. Current emails go to your Resend account email only.", "api_key_found": True, "note": "Add a domain at resend.com to enable customer emails"}
 
 # ============ Reviews Routes ============
 
