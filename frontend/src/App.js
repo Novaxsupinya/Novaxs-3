@@ -1468,11 +1468,11 @@ const Footer = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-xl font-bold mb-4">
-              <span className="text-white">Hands</span>
-              <span className="text-orange-500">Free</span>
+              <span className="text-orange-500">Nova</span>
+              <span className="text-white">xs</span>
             </h3>
             <p className="text-slate-400 text-sm">
-              Your hands-free shopping destination. Quality products, automated delivery.
+              Your one-stop shop for amazing deals. Quality products, fast delivery worldwide.
             </p>
           </div>
           <div>
