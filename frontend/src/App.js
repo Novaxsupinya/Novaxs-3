@@ -1505,7 +1505,7 @@ const Footer = () => {
         </div>
         <Separator className="my-8 bg-slate-700" />
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-400">
-          <p>© 2024 HandsFree. All rights reserved.</p>
+          <p>© 2024 Novaxs. All rights reserved.</p>
           <div className="flex gap-4">
             <a href="#" className="hover:text-orange-500">Privacy Policy</a>
             <a href="#" className="hover:text-orange-500">Terms of Service</a>
