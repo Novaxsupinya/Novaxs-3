@@ -1346,6 +1346,224 @@ async def admin_send_test_email(admin=Depends(get_admin_user)):
         return {"message": f"Test email sent to {ADMIN_EMAIL}", "email_id": result.get("id")}
     return {"message": "Email not configured - add RESEND_API_KEY to .env"}
 
+# ============ Reviews Routes ============
+
+@api_router.get("/products/{product_id}/reviews")
+async def get_product_reviews(product_id: str, page: int = 1, limit: int = 10):
+    """Get reviews for a product"""
+    skip = (page - 1) * limit
+    reviews = await db.reviews.find({"product_id": product_id}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    total = await db.reviews.count_documents({"product_id": product_id})
+    
+    # Calculate rating distribution
+    pipeline = [
+        {"$match": {"product_id": product_id}},
+        {"$group": {"_id": "$rating", "count": {"$sum": 1}}}
+    ]
+    rating_dist = await db.reviews.aggregate(pipeline).to_list(5)
+    distribution = {i: 0 for i in range(1, 6)}
+    for item in rating_dist:
+        distribution[item["_id"]] = item["count"]
+    
+    return {"reviews": reviews, "total": total, "distribution": distribution}
+
+@api_router.post("/products/{product_id}/reviews")
+async def create_review(product_id: str, review: ReviewCreate, user=Depends(get_current_user)):
+    """Create a review for a product"""
+    # Check if product exists
+    product = await db.products.find_one({"id": product_id})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Check if user has purchased this product (verified purchase)
+    verified = False
+    if user:
+        order = await db.orders.find_one({
+            "user_id": user["id"],
+            "items.product_id": product_id,
+            "payment_status": "paid"
+        })
+        verified = order is not None
+    
+    review_doc = {
+        "id": str(uuid.uuid4()),
+        "product_id": product_id,
+        "user_id": user["id"] if user else None,
+        "user_name": user["name"] if user else "Anonymous",
+        "rating": review.rating,
+        "title": review.title,
+        "comment": review.comment,
+        "verified_purchase": verified,
+        "helpful_count": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.reviews.insert_one(review_doc)
+    
+    # Update product rating
+    pipeline = [
+        {"$match": {"product_id": product_id}},
+        {"$group": {"_id": None, "avg": {"$avg": "$rating"}, "count": {"$sum": 1}}}
+    ]
+    result = await db.reviews.aggregate(pipeline).to_list(1)
+    if result:
+        await db.products.update_one(
+            {"id": product_id},
+            {"$set": {"rating": round(result[0]["avg"], 1), "reviews_count": result[0]["count"]}}
+        )
+    
+    review_doc.pop("_id", None)
+    return review_doc
+
+@api_router.post("/reviews/{review_id}/helpful")
+async def mark_review_helpful(review_id: str):
+    """Mark a review as helpful"""
+    result = await db.reviews.update_one({"id": review_id}, {"$inc": {"helpful_count": 1}})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"message": "Marked as helpful"}
+
+# ============ Customer Service Routes ============
+
+@api_router.post("/contact")
+async def contact_support(request: ContactRequest):
+    """Send customer service request"""
+    # Determine if this is a product/shipping issue (CJ handles) or app issue (we handle)
+    product_keywords = ["shipping", "delivery", "tracking", "damaged", "wrong item", "refund", "return", "quality"]
+    is_product_issue = any(kw in request.message.lower() or kw in request.subject.lower() for kw in product_keywords)
+    
+    if is_product_issue:
+        # Product issues - inform customer CJ handles this
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#F97316;color:white;padding:20px;text-align:center;">
+                <h1 style="margin:0;">Novaxs</h1>
+            </div>
+            <div style="padding:30px;background:#fff;">
+                <h2>Customer Support Request Received</h2>
+                <p>Thank you for contacting us, {request.name}!</p>
+                <p>Your inquiry regarding <strong>{request.subject}</strong> has been received.</p>
+                <p>Since this appears to be related to shipping, product quality, or returns, our fulfillment partner will handle your request directly. You should receive a response within 24-48 hours.</p>
+                {f'<p><strong>Order #:</strong> {request.order_number}</p>' if request.order_number else ''}
+                <div style="background:#f8f8f8;padding:15px;border-radius:8px;margin-top:20px;">
+                    <p style="margin:0;"><strong>Your Message:</strong></p>
+                    <p style="margin:10px 0 0 0;color:#666;">{request.message}</p>
+                </div>
+            </div>
+        </div>
+        """
+    else:
+        # App/general issues - we handle
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#F97316;color:white;padding:20px;text-align:center;">
+                <h1 style="margin:0;">Novaxs</h1>
+            </div>
+            <div style="padding:30px;background:#fff;">
+                <h2>We've Received Your Message!</h2>
+                <p>Hi {request.name},</p>
+                <p>Thank you for reaching out. Our team will review your inquiry and get back to you within 24 hours.</p>
+                <p><strong>Subject:</strong> {request.subject}</p>
+                <div style="background:#f8f8f8;padding:15px;border-radius:8px;margin-top:20px;">
+                    <p style="margin:0;"><strong>Your Message:</strong></p>
+                    <p style="margin:10px 0 0 0;color:#666;">{request.message}</p>
+                </div>
+            </div>
+        </div>
+        """
+    
+    # Send confirmation to customer
+    await send_email(request.email, f"Re: {request.subject} - Novaxs Support", html)
+    
+    # Send to admin
+    admin_html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#0F172A;color:white;padding:20px;">
+            <h2 style="margin:0;">New Support Request</h2>
+        </div>
+        <div style="padding:20px;background:#fff;">
+            <p><strong>Type:</strong> {'Product/Shipping Issue (CJ)' if is_product_issue else 'App/General Issue'}</p>
+            <p><strong>From:</strong> {request.name} ({request.email})</p>
+            <p><strong>Subject:</strong> {request.subject}</p>
+            {f'<p><strong>Order #:</strong> {request.order_number}</p>' if request.order_number else ''}
+            <div style="background:#f8f8f8;padding:15px;border-radius:8px;">
+                <p>{request.message}</p>
+            </div>
+        </div>
+    </div>
+    """
+    await send_email(ADMIN_EMAIL, f"[Support] {request.subject}", admin_html)
+    
+    # Store in database
+    ticket = {
+        "id": str(uuid.uuid4()),
+        "name": request.name,
+        "email": request.email,
+        "subject": request.subject,
+        "message": request.message,
+        "order_number": request.order_number,
+        "type": "product" if is_product_issue else "general",
+        "status": "open",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.support_tickets.insert_one(ticket)
+    
+    return {"message": "Support request submitted", "ticket_id": ticket["id"], "type": ticket["type"]}
+
+# ============ Security Middleware ============
+
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class SecurityMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Rate limiting (100 requests per minute per IP)
+        client_ip = request.client.host
+        current_time = datetime.now(timezone.utc)
+        
+        if client_ip in rate_limit_store:
+            requests, first_request = rate_limit_store[client_ip]
+            if (current_time - first_request).seconds < 60:
+                if requests >= 100:
+                    return JSONResponse(status_code=429, content={"detail": "Too many requests"})
+                rate_limit_store[client_ip] = (requests + 1, first_request)
+            else:
+                rate_limit_store[client_ip] = (1, current_time)
+        else:
+            rate_limit_store[client_ip] = (1, current_time)
+        
+        response = await call_next(request)
+        
+        # Security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        
+        return response
+
+from starlette.responses import JSONResponse
+app.add_middleware(SecurityMiddleware)
+
+# ============ Auto Sync CJ Products ============
+
+async def auto_sync_cj_products():
+    """Background task to auto-sync CJ products every 6 hours"""
+    while True:
+        try:
+            logger.info("Starting automatic CJ product sync...")
+            await sync_products_from_cj("", 200)
+            logger.info("CJ product sync completed")
+        except Exception as e:
+            logger.error(f"CJ sync error: {e}")
+        await asyncio.sleep(6 * 60 * 60)  # 6 hours
+
+@app.on_event("startup")
+async def startup_event():
+    # Start auto-sync task
+    asyncio.create_task(auto_sync_cj_products())
+    logger.info("Novaxs API started - Auto CJ sync enabled")
+
 # Include the router
 app.include_router(api_router)
 
