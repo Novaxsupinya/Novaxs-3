@@ -468,7 +468,7 @@ paypal_service = PayPalService()
 # Health check
 @api_router.get("/")
 async def root():
-    return {"message": "HandsFree E-commerce API", "status": "running"}
+    return {"message": "Novaxs E-commerce API", "status": "running"}
 
 @api_router.get("/health")
 async def health():
