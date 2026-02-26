@@ -205,8 +205,8 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex-shrink-0" data-testid="logo">
             <h1 className="text-2xl font-extrabold tracking-tight">
-              <span className="text-slate-900">Hands</span>
-              <span className="text-orange-500">Free</span>
+              <span className="text-orange-500">Nova</span>
+              <span className="text-slate-900">xs</span>
             </h1>
           </Link>
 
