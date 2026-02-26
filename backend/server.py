@@ -57,6 +57,9 @@ if RESEND_API_KEY:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Rate limiting storage (simple in-memory)
+rate_limit_store = {}
+
 # ============ Pydantic Models ============
 
 class UserCreate(BaseModel):
@@ -106,6 +109,31 @@ class Product(BaseModel):
     is_active: bool = True
     tags: List[str] = []
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ReviewCreate(BaseModel):
+    product_id: str
+    rating: int = Field(ge=1, le=5)
+    title: str
+    comment: str
+
+class Review(BaseModel):
+    id: str
+    product_id: str
+    user_id: Optional[str] = None
+    user_name: str
+    rating: int
+    title: str
+    comment: str
+    verified_purchase: bool = False
+    helpful_count: int = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class ContactRequest(BaseModel):
+    name: str
+    email: EmailStr
+    subject: str
+    message: str
+    order_number: Optional[str] = None
 
 class CartItem(BaseModel):
     product_id: str
