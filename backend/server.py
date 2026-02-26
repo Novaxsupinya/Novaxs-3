@@ -195,8 +195,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except:
         return None
 
-def generate_order_number():
-    return f"HF{datetime.now().strftime('%Y%m%d')}{str(uuid.uuid4())[:8].upper()}"
+function generate_order_number():
+    return f"NVX{datetime.now().strftime('%Y%m%d')}{str(uuid.uuid4())[:8].upper()}"
 
 # ============ CJ Dropshipping Service ============
 
