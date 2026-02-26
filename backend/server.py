@@ -1081,13 +1081,16 @@ async def paypal_webhook(request: dict, background_tasks: BackgroundTasks):
 
 async def send_email(to_email: str, subject: str, html_content: str):
     """Send email using Resend"""
-    if not RESEND_API_KEY:
+    api_key = os.environ.get('RESEND_API_KEY', '')
+    if not api_key:
         logger.warning("RESEND_API_KEY not configured, skipping email")
         return None
     
+    resend.api_key = api_key
+    
     try:
         params = {
-            "from": SENDER_EMAIL,
+            "from": os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev'),
             "to": [to_email],
             "subject": subject,
             "html": html_content
