@@ -1807,10 +1807,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Customer Service</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><a href="#" className="hover:text-orange-500">Contact Us</a></li>
-              <li><a href="#" className="hover:text-orange-500">Shipping Info</a></li>
-              <li><a href="#" className="hover:text-orange-500">Returns</a></li>
-              <li><a href="#" className="hover:text-orange-500">FAQ</a></li>
+              <li><Link to="/contact" className="hover:text-orange-500">Contact Us</Link></li>
+              <li><Link to="/contact" className="hover:text-orange-500">Shipping Info</Link></li>
+              <li><Link to="/contact" className="hover:text-orange-500">Returns</Link></li>
+              <li><Link to="/contact" className="hover:text-orange-500">FAQ</Link></li>
             </ul>
           </div>
           <div>
