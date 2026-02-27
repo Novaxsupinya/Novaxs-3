@@ -747,11 +747,15 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     if not cart or not cart.get("items"):
         raise HTTPException(status_code=400, detail="Cart is empty")
     
+    # Batch fetch all products (optimized)
+    product_ids = [item["product_id"] for item in cart["items"]]
+    products_map = await batch_get_products(product_ids)
+    
     # Build order items
     order_items = []
     subtotal = 0.0
     for cart_item in cart["items"]:
-        product = await db.products.find_one({"id": cart_item["product_id"]}, {"_id": 0})
+        product = products_map.get(cart_item["product_id"])
         if product:
             item_total = product["price"] * cart_item["quantity"]
             subtotal += item_total
