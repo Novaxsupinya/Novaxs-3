@@ -642,20 +642,42 @@ async def get_product(product_id: str):
 
 # ============ Cart Routes ============
 
+async def batch_get_products(product_ids: list):
+    """Batch fetch products by IDs - optimized to avoid N+1 queries"""
+    if not product_ids:
+        return {}
+    products = await db.products.find({"id": {"$in": product_ids}}, {"_id": 0}).to_list(len(product_ids))
+    return {p["id"]: p for p in products}
+
+async def calculate_cart_subtotal(cart_items: list, products_map: dict = None):
+    """Calculate cart subtotal with optional pre-fetched products"""
+    if not cart_items:
+        return 0.0
+    if products_map is None:
+        product_ids = [item["product_id"] for item in cart_items]
+        products_map = await batch_get_products(product_ids)
+    subtotal = 0.0
+    for item in cart_items:
+        product = products_map.get(item["product_id"])
+        if product:
+            subtotal += product["price"] * item["quantity"]
+    return subtotal
+
 @api_router.get("/cart/{cart_id}")
 async def get_cart(cart_id: str):
     cart = await db.carts.find_one({"id": cart_id}, {"_id": 0})
     if not cart:
         cart = {"id": cart_id, "items": [], "subtotal": 0.0, "created_at": datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc).isoformat()}
-        await db.carts.insert_one(dict(cart))  # Insert a copy to avoid _id mutation
+        await db.carts.insert_one(dict(cart))
+    
+    # Batch fetch all products at once (optimized)
+    product_ids = [item["product_id"] for item in cart.get("items", [])]
+    products_map = await batch_get_products(product_ids)
     
     # Populate product details
     for item in cart.get("items", []):
-        product = await db.products.find_one({"id": item["product_id"]}, {"_id": 0})
-        if product:
-            item["product"] = product
+        item["product"] = products_map.get(item["product_id"])
     
-    # Remove _id if present
     cart.pop("_id", None)
     return cart
 
@@ -677,14 +699,8 @@ async def add_to_cart(cart_id: str, item: CartItem):
     else:
         cart["items"].append({"product_id": item.product_id, "variant_id": item.variant_id, "quantity": item.quantity})
     
-    # Recalculate subtotal
-    subtotal = 0.0
-    for cart_item in cart["items"]:
-        product = await db.products.find_one({"id": cart_item["product_id"]}, {"_id": 0})
-        if product:
-            subtotal += product["price"] * cart_item["quantity"]
-    
-    cart["subtotal"] = subtotal
+    # Recalculate subtotal (optimized batch query)
+    cart["subtotal"] = await calculate_cart_subtotal(cart["items"])
     cart["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     await db.carts.update_one({"id": cart_id}, {"$set": cart}, upsert=True)
@@ -704,14 +720,8 @@ async def update_cart_item(cart_id: str, product_id: str, quantity: int = Query(
                 item["quantity"] = quantity
                 break
     
-    # Recalculate subtotal
-    subtotal = 0.0
-    for cart_item in cart["items"]:
-        product = await db.products.find_one({"id": cart_item["product_id"]}, {"_id": 0})
-        if product:
-            subtotal += product["price"] * cart_item["quantity"]
-    
-    cart["subtotal"] = subtotal
+    # Recalculate subtotal (optimized batch query)
+    cart["subtotal"] = await calculate_cart_subtotal(cart["items"])
     cart["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     await db.carts.update_one({"id": cart_id}, {"$set": cart})
