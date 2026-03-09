@@ -498,6 +498,51 @@ class PayPalService:
         except Exception as e:
             logger.error(f"Error capturing PayPal order: {e}")
         return None
+    
+    async def add_tracking(self, capture_id: str, tracking_number: str, carrier: str = "OTHER", order_id: str = ""):
+        """Add tracking info to PayPal transaction - prevents payment holds"""
+        token = await self.get_access_token()
+        if not token:
+            logger.warning("Cannot add tracking - PayPal not configured")
+            return None
+        
+        # Map common carriers
+        carrier_map = {
+            "usps": "USPS",
+            "ups": "UPS", 
+            "fedex": "FEDEX",
+            "dhl": "DHL",
+            "china post": "CHINA_POST",
+            "yanwen": "YANWEN",
+            "cj packet": "OTHER",
+            "4px": "FOUR_PX_EXPRESS",
+            "yunexpress": "YUNEXPRESS"
+        }
+        carrier_code = carrier_map.get(carrier.lower(), "OTHER")
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.base_url}/v1/shipping/trackers-batch",
+                    json={
+                        "trackers": [{
+                            "transaction_id": capture_id,
+                            "tracking_number": tracking_number,
+                            "carrier": carrier_code,
+                            "status": "SHIPPED"
+                        }]
+                    },
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                result = response.json()
+                logger.info(f"PayPal tracking added for {order_id}: {tracking_number}")
+                return result
+        except Exception as e:
+            logger.error(f"Error adding PayPal tracking: {e}")
+        return None
 
 paypal_service = PayPalService()
 
