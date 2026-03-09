@@ -868,12 +868,24 @@ async def capture_payment(order_id: str, paypal_order_id: str, background_tasks:
     capture_result = await paypal_service.capture_order(paypal_order_id)
     
     if capture_result and capture_result.get("status") == "COMPLETED":
-        # Update order status
+        # Extract capture ID for tracking later
+        capture_id = None
+        try:
+            purchase_units = capture_result.get("purchase_units", [])
+            if purchase_units:
+                captures = purchase_units[0].get("payments", {}).get("captures", [])
+                if captures:
+                    capture_id = captures[0].get("id")
+        except:
+            pass
+        
+        # Update order status with capture ID
         await db.orders.update_one(
             {"id": order_id},
             {"$set": {
                 "payment_status": "paid",
                 "status": "processing",
+                "paypal_capture_id": capture_id,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
@@ -881,8 +893,10 @@ async def capture_payment(order_id: str, paypal_order_id: str, background_tasks:
         # Trigger CJ order creation in background
         background_tasks.add_task(create_cj_order, order_id)
         
+        # Send order confirmation email
         order["payment_status"] = "paid"
         order["status"] = "processing"
+        background_tasks.add_task(send_order_confirmation, order)
         
         return {"success": True, "order": order, "message": "Payment captured successfully"}
     
