@@ -1661,11 +1661,66 @@ async def auto_sync_cj_products():
             logger.error(f"CJ sync error: {e}")
         await asyncio.sleep(6 * 60 * 60)  # 6 hours
 
+async def auto_sync_tracking():
+    """Background task to sync tracking from CJ and push to PayPal every 30 mins"""
+    while True:
+        try:
+            # Find orders that are processing but don't have tracking yet
+            orders = await db.orders.find({
+                "status": {"$in": ["processing", "paid"]},
+                "cj_order_id": {"$exists": True, "$ne": None},
+                "$or": [
+                    {"tracking_number": {"$exists": False}},
+                    {"tracking_number": None},
+                    {"tracking_number": ""}
+                ]
+            }, {"_id": 0}).to_list(50)
+            
+            for order in orders:
+                try:
+                    cj_status = await cj_service.get_order_status(order["cj_order_id"])
+                    if cj_status and cj_status.get("trackNumber"):
+                        tracking = cj_status.get("trackNumber")
+                        
+                        # Update order with tracking
+                        await db.orders.update_one(
+                            {"id": order["id"]},
+                            {"$set": {
+                                "tracking_number": tracking,
+                                "status": "shipped",
+                                "updated_at": datetime.now(timezone.utc).isoformat()
+                            }}
+                        )
+                        
+                        # Push to PayPal to release funds
+                        if order.get("paypal_capture_id"):
+                            await paypal_service.add_tracking(
+                                order["paypal_capture_id"],
+                                tracking,
+                                "CJ Packet",
+                                order.get("order_number", "")
+                            )
+                            logger.info(f"Auto-pushed tracking to PayPal: {order['order_number']} -> {tracking}")
+                        
+                        # Send shipping email
+                        await send_shipping_notification(order, tracking)
+                        
+                except Exception as e:
+                    logger.error(f"Error syncing tracking for order {order.get('id')}: {e}")
+                
+                await asyncio.sleep(1)  # Small delay between orders
+                
+        except Exception as e:
+            logger.error(f"Tracking sync error: {e}")
+        
+        await asyncio.sleep(30 * 60)  # Every 30 minutes
+
 @app.on_event("startup")
 async def startup_event():
-    # Start auto-sync task
+    # Start auto-sync tasks
     asyncio.create_task(auto_sync_cj_products())
-    logger.info("Novaxs API started - Auto CJ sync enabled")
+    asyncio.create_task(auto_sync_tracking())
+    logger.info("Novaxs API started - Auto CJ sync & tracking enabled")
 
 # Include the router
 app.include_router(api_router)
