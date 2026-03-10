@@ -979,14 +979,34 @@ async def get_order(order_id: str, user=Depends(get_current_user)):
         cj_status = await cj_service.get_order_status(order["cj_order_id"])
         if cj_status:
             order["cj_status"] = cj_status.get("orderStatus")
-            order["tracking_number"] = cj_status.get("trackNumber")
+            new_tracking = cj_status.get("trackNumber")
             
-            # Update tracking in DB
-            if cj_status.get("trackNumber"):
+            # If we got tracking and haven't pushed to PayPal yet
+            if new_tracking and new_tracking != order.get("tracking_number"):
+                order["tracking_number"] = new_tracking
+                
+                # Update tracking in DB
                 await db.orders.update_one(
                     {"id": order_id},
-                    {"$set": {"tracking_number": cj_status.get("trackNumber")}}
+                    {"$set": {
+                        "tracking_number": new_tracking,
+                        "status": "shipped",
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
                 )
+                
+                # Push tracking to PayPal to release funds
+                if order.get("paypal_capture_id"):
+                    await paypal_service.add_tracking(
+                        order["paypal_capture_id"],
+                        new_tracking,
+                        "CJ Packet",
+                        order.get("order_number", "")
+                    )
+                    logger.info(f"Tracking pushed to PayPal for order {order_id}")
+                
+                # Send shipping notification email
+                asyncio.create_task(send_shipping_notification(order, new_tracking))
     
     return order
 
