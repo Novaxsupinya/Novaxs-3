@@ -162,10 +162,8 @@ const AppProvider = ({ children }) => {
 
 // Header Component
 const Header = () => {
-  const { cart, user, logout, categories } = useApp();
+  const { cart } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const navigate = useNavigate();
 
   const cartItemsCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
@@ -178,181 +176,80 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm" data-testid="header">
-      {/* Top Bar */}
-      <div className="bg-slate-900 text-white text-sm py-2">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <span className="hidden sm:block">Free shipping on orders over $50</span>
-          <span className="sm:hidden text-xs">Free shipping $50+</span>
-          <div className="flex items-center gap-4">
-            <span className="hidden md:flex items-center gap-1"><Truck className="w-4 h-4" /> Fast Delivery</span>
-            <span className="hidden md:flex items-center gap-1"><Shield className="w-4 h-4" /> Secure Checkout</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Header */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center gap-4 lg:gap-8">
-          {/* Mobile Menu Button */}
-          <button 
-            className="lg:hidden p-2 hover:bg-slate-100 rounded-lg"
-            onClick={() => setMobileMenuOpen(true)}
-            data-testid="mobile-menu-btn"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-
-          {/* Logo */}
+    <header className="sticky top-0 z-50" data-testid="header">
+      {/* Main Header - Dark purple-blue background */}
+      <div className="py-4" style={{ backgroundColor: '#0A0A1F' }}>
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
+          {/* Left: Logo */}
           <Link to="/" className="flex-shrink-0" data-testid="logo">
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              <span className="text-orange-500">Nova</span>
-              <span className="text-slate-900">xs</span>
-            </h1>
+            <img 
+              src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/g0y20dm6_image-1.jpg" 
+              alt="NOVAXS" 
+              className="h-12 md:h-14 object-contain"
+              style={{ filter: 'drop-shadow(0 0 10px rgba(160, 32, 240, 0.5))' }}
+            />
           </Link>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl hidden md:flex">
-            <div className="relative w-full">
-              <Input
+          {/* Center: Search Bar */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:block">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#A020F0' }} />
+              <input
                 type="text"
-                placeholder="Search for products..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 pl-4 pr-12 rounded-full border-2 border-slate-200 focus:border-orange-500"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 focus:outline-none transition-all"
+                style={{ 
+                  backgroundColor: '#1A1A2E', 
+                  borderColor: '#A020F0',
+                  color: '#E0E0FF'
+                }}
+                onFocus={(e) => e.target.style.boxShadow = '0 0 12px rgba(160, 32, 240, 0.5)'}
+                onBlur={(e) => e.target.style.boxShadow = 'none'}
                 data-testid="search-input"
               />
-              <Button 
-                type="submit"
-                size="icon"
-                className="absolute right-1 top-1 h-10 w-10 rounded-full bg-orange-500 hover:bg-orange-600"
-                data-testid="search-btn"
-              >
-                <Search className="w-5 h-5" />
-              </Button>
             </div>
           </form>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-2 lg:gap-4">
-            {/* User Menu */}
-            {user ? (
-              <div className="hidden sm:flex items-center gap-2">
-                <Link to="/orders" className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 rounded-lg" data-testid="orders-link">
-                  <Package className="w-5 h-5" />
-                  <span className="hidden lg:block text-sm font-medium">Orders</span>
-                </Link>
-                <button 
-                  onClick={logout}
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 rounded-lg text-slate-600"
-                  data-testid="logout-btn"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            ) : (
-              <Dialog open={authOpen} onOpenChange={setAuthOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" className="hidden sm:flex gap-2" data-testid="login-btn">
-                    <User className="w-5 h-5" />
-                    <span className="hidden lg:block">Sign In</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <AuthDialog onClose={() => setAuthOpen(false)} />
-                </DialogContent>
-              </Dialog>
+          {/* Right: Cart Icon */}
+          <Link to="/checkout" className="relative p-2" data-testid="cart-btn">
+            <ShoppingCart 
+              className="w-7 h-7" 
+              style={{ color: '#A020F0', filter: 'drop-shadow(0 0 8px rgba(160, 32, 240, 0.6))' }} 
+            />
+            {cartItemsCount > 0 && (
+              <span 
+                className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
+                style={{ backgroundColor: '#A020F0' }}
+              >
+                {cartItemsCount}
+              </span>
             )}
-
-            {/* Cart */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="relative gap-2 rounded-full" data-testid="cart-btn">
-                  <ShoppingCart className="w-5 h-5" />
-                  <span className="hidden lg:block">Cart</span>
-                  {cartItemsCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-orange-500">
-                      {cartItemsCount}
-                    </Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-lg">
-                <CartDrawer />
-              </SheetContent>
-            </Sheet>
-          </div>
+          </Link>
         </div>
 
         {/* Mobile Search */}
-        <form onSubmit={handleSearch} className="mt-4 md:hidden">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-4 pr-12 rounded-full border-2 border-slate-200"
-            />
-            <Button 
-              type="submit"
-              size="icon"
-              className="absolute right-1 top-1 h-9 w-9 rounded-full bg-orange-500"
-            >
-              <Search className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
-
-        {/* Desktop Categories */}
-        <nav className="hidden lg:flex items-center gap-6 mt-4 pt-4 border-t border-slate-100">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/products?category=${cat.slug}`}
-              className="text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors"
-              data-testid={`category-link-${cat.slug}`}
-            >
-              {cat.name}
-            </Link>
-          ))}
-        </nav>
+        <div className="md:hidden px-4 mt-3">
+          <form onSubmit={handleSearch}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#A020F0' }} />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 focus:outline-none"
+                style={{ 
+                  backgroundColor: '#1A1A2E', 
+                  borderColor: '#A020F0',
+                  color: '#E0E0FF'
+                }}
+              />
+            </div>
+          </form>
+        </div>
       </div>
-
-      {/* Mobile Menu */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-80">
-          <SheetHeader>
-            <SheetTitle className="text-left">Menu</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                to={`/products?category=${cat.slug}`}
-                className="block py-2 text-slate-600 hover:text-orange-500"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {cat.name}
-              </Link>
-            ))}
-            <Separator />
-            {user ? (
-              <>
-                <Link to="/orders" className="block py-2" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
-                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="block py-2 text-red-500">Logout</button>
-              </>
-            ) : (
-              <Dialog>
-                <DialogTrigger className="block py-2 text-orange-500 font-medium">Sign In / Register</DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <AuthDialog onClose={() => setMobileMenuOpen(false)} />
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
     </header>
   );
 };
