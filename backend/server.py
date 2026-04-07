@@ -42,10 +42,8 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'NovaxsAdmin2024!')
 CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1"
 CJ_API_KEY = os.environ.get('CJ_API_KEY', '')
 
-# PayPal Configuration
-PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', '')
-PAYPAL_SECRET = os.environ.get('PAYPAL_SECRET', '')
-PAYPAL_BASE_URL = os.environ.get('PAYPAL_BASE_URL', 'https://api-m.sandbox.paypal.com')
+# Stripe Configuration
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
 
 # Resend Email Configuration
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
@@ -190,7 +188,7 @@ class Order(BaseModel):
     total: float
     status: str = "pending"
     payment_status: str = "pending"
-    paypal_order_id: Optional[str] = None
+    stripe_session_id: Optional[str] = None
     cj_order_id: Optional[str] = None
     tracking_number: Optional[str] = None
     shipping_address: Dict[str, Any] = {}
@@ -404,147 +402,15 @@ class CJDropshippingService:
 
 cj_service = CJDropshippingService()
 
-# ============ PayPal Service ============
+# ============ Stripe Service ============
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 
-class PayPalService:
-    def __init__(self):
-        self.client_id = PAYPAL_CLIENT_ID
-        self.secret = PAYPAL_SECRET
-        self.base_url = PAYPAL_BASE_URL
-        self.access_token = None
-        self.token_expiry = None
-    
-    async def get_access_token(self):
-        """Get PayPal access token"""
-        if not self.client_id or not self.secret:
-            logger.warning("PayPal credentials not configured")
-            return None
-        
-        if self.access_token and self.token_expiry and datetime.now(timezone.utc) < self.token_expiry:
-            return self.access_token
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/v1/oauth2/token",
-                    data={"grant_type": "client_credentials"},
-                    auth=(self.client_id, self.secret),
-                    headers={"Content-Type": "application/x-www-form-urlencoded"}
-                )
-                data = response.json()
-                if "access_token" in data:
-                    self.access_token = data["access_token"]
-                    self.token_expiry = datetime.now(timezone.utc) + timedelta(seconds=data.get("expires_in", 3600) - 300)
-                    return self.access_token
-        except Exception as e:
-            logger.error(f"Error getting PayPal access token: {e}")
+def get_stripe_checkout(host_url: str = ""):
+    if not STRIPE_API_KEY:
+        logger.warning("Stripe API key not configured")
         return None
-    
-    async def create_order(self, amount: float, currency: str = "USD", order_id: str = ""):
-        """Create PayPal order"""
-        token = await self.get_access_token()
-        if not token:
-            # Return mock order for demo
-            return {
-                "id": f"MOCK-{uuid.uuid4().hex[:12].upper()}",
-                "status": "CREATED",
-                "links": [{"rel": "approve", "href": "#"}]
-            }
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/v2/checkout/orders",
-                    json={
-                        "intent": "CAPTURE",
-                        "purchase_units": [{
-                            "reference_id": order_id,
-                            "amount": {
-                                "currency_code": currency,
-                                "value": f"{amount:.2f}"
-                            }
-                        }]
-                    },
-                    headers={
-                        "Authorization": f"Bearer {token}",
-                        "Content-Type": "application/json"
-                    }
-                )
-                return response.json()
-        except Exception as e:
-            logger.error(f"Error creating PayPal order: {e}")
-        return None
-    
-    async def capture_order(self, paypal_order_id: str):
-        """Capture PayPal order"""
-        token = await self.get_access_token()
-        if not token:
-            # Return mock capture for demo
-            return {
-                "id": paypal_order_id,
-                "status": "COMPLETED"
-            }
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/v2/checkout/orders/{paypal_order_id}/capture",
-                    headers={
-                        "Authorization": f"Bearer {token}",
-                        "Content-Type": "application/json"
-                    }
-                )
-                return response.json()
-        except Exception as e:
-            logger.error(f"Error capturing PayPal order: {e}")
-        return None
-    
-    async def add_tracking(self, capture_id: str, tracking_number: str, carrier: str = "OTHER", order_id: str = ""):
-        """Add tracking info to PayPal transaction - prevents payment holds"""
-        token = await self.get_access_token()
-        if not token:
-            logger.warning("Cannot add tracking - PayPal not configured")
-            return None
-        
-        # Map common carriers
-        carrier_map = {
-            "usps": "USPS",
-            "ups": "UPS", 
-            "fedex": "FEDEX",
-            "dhl": "DHL",
-            "china post": "CHINA_POST",
-            "yanwen": "YANWEN",
-            "cj packet": "OTHER",
-            "4px": "FOUR_PX_EXPRESS",
-            "yunexpress": "YUNEXPRESS"
-        }
-        carrier_code = carrier_map.get(carrier.lower(), "OTHER")
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/v1/shipping/trackers-batch",
-                    json={
-                        "trackers": [{
-                            "transaction_id": capture_id,
-                            "tracking_number": tracking_number,
-                            "carrier": carrier_code,
-                            "status": "SHIPPED"
-                        }]
-                    },
-                    headers={
-                        "Authorization": f"Bearer {token}",
-                        "Content-Type": "application/json"
-                    }
-                )
-                result = response.json()
-                logger.info(f"PayPal tracking added for {order_id}: {tracking_number}")
-                return result
-        except Exception as e:
-            logger.error(f"Error adding PayPal tracking: {e}")
-        return None
-
-paypal_service = PayPalService()
+    webhook_url = f"{host_url}api/webhook/stripe" if host_url else ""
+    return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
 
 # ============ API Routes ============
 
@@ -836,11 +702,6 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # Create PayPal order
-    paypal_order = await paypal_service.create_order(total, "USD", order_number)
-    if paypal_order:
-        order["paypal_order_id"] = paypal_order.get("id")
-    
     await db.orders.insert_one(order)
     
     # Clear cart
@@ -852,55 +713,121 @@ async def create_order(order_data: OrderCreate, background_tasks: BackgroundTask
     # Remove _id before returning
     order.pop("_id", None)
     
-    return {
-        "order": order,
-        "paypal_order_id": paypal_order.get("id") if paypal_order else None,
-        "paypal_approve_url": next((link["href"] for link in paypal_order.get("links", []) if link["rel"] == "approve"), None) if paypal_order else None
-    }
+    return {"order": order}
 
-@api_router.post("/orders/{order_id}/capture")
-async def capture_payment(order_id: str, paypal_order_id: str, background_tasks: BackgroundTasks):
-    order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+# ============ Stripe Checkout Endpoints ============
+
+class StripeCheckoutRequest(BaseModel):
+    order_id: str
+    origin_url: str
+
+@api_router.post("/checkout/stripe")
+async def create_stripe_checkout(req: StripeCheckoutRequest):
+    """Create Stripe checkout session for an order"""
+    order = await db.orders.find_one({"id": req.order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # Capture PayPal payment
-    capture_result = await paypal_service.capture_order(paypal_order_id)
+    if order.get("payment_status") == "paid":
+        raise HTTPException(status_code=400, detail="Order already paid")
     
-    if capture_result and capture_result.get("status") == "COMPLETED":
-        # Extract capture ID for tracking later
-        capture_id = None
-        try:
-            purchase_units = capture_result.get("purchase_units", [])
-            if purchase_units:
-                captures = purchase_units[0].get("payments", {}).get("captures", [])
-                if captures:
-                    capture_id = captures[0].get("id")
-        except:
-            pass
-        
-        # Update order status with capture ID
-        await db.orders.update_one(
-            {"id": order_id},
-            {"$set": {
-                "payment_status": "paid",
-                "status": "processing",
-                "paypal_capture_id": capture_id,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
-        )
-        
-        # Trigger CJ order creation in background
-        background_tasks.add_task(create_cj_order, order_id)
-        
-        # Send order confirmation email
-        order["payment_status"] = "paid"
-        order["status"] = "processing"
-        background_tasks.add_task(send_order_confirmation, order)
-        
-        return {"success": True, "order": order, "message": "Payment captured successfully"}
+    stripe = get_stripe_checkout(req.origin_url)
+    if not stripe:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
     
-    return {"success": False, "message": "Payment capture failed"}
+    success_url = f"{req.origin_url}order-confirmation/{order['id']}?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{req.origin_url}checkout"
+    
+    checkout_req = CheckoutSessionRequest(
+        amount=float(order["total"]),
+        currency="usd",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={"order_id": order["id"], "order_number": order["order_number"]}
+    )
+    
+    session: CheckoutSessionResponse = await stripe.create_checkout_session(checkout_req)
+    
+    # Store session ID in order
+    await db.orders.update_one(
+        {"id": order["id"]},
+        {"$set": {"stripe_session_id": session.session_id, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Create payment transaction record
+    await db.payment_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "order_id": order["id"],
+        "session_id": session.session_id,
+        "amount": order["total"],
+        "currency": "usd",
+        "payment_status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"checkout_url": session.url, "session_id": session.session_id}
+
+@api_router.get("/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str, origin_url: str = ""):
+    """Get Stripe checkout session status"""
+    stripe = get_stripe_checkout(origin_url)
+    if not stripe:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    status: CheckoutStatusResponse = await stripe.get_checkout_status(session_id)
+    return status
+
+# ============ Stripe Webhook ============
+
+from fastapi import Request
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request, background_tasks: BackgroundTasks):
+    """Handle Stripe webhooks - triggers CJ fulfillment on successful payment"""
+    body = await request.body()
+    sig = request.headers.get("Stripe-Signature", "")
+    
+    stripe = get_stripe_checkout("")
+    if not stripe:
+        return {"status": "stripe not configured"}
+    
+    try:
+        webhook_response = await stripe.handle_webhook(body, sig)
+        logger.info(f"Stripe webhook: {webhook_response.event_type} - {webhook_response.payment_status}")
+        
+        if webhook_response.event_type == "checkout.session.completed" and webhook_response.payment_status == "paid":
+            order_id = webhook_response.metadata.get("order_id")
+            if order_id:
+                # Update order status
+                await db.orders.update_one(
+                    {"id": order_id},
+                    {"$set": {
+                        "payment_status": "paid",
+                        "status": "processing",
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                
+                # Update payment transaction
+                await db.payment_transactions.update_one(
+                    {"session_id": webhook_response.session_id},
+                    {"$set": {"payment_status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                # Trigger CJ fulfillment
+                background_tasks.add_task(create_cj_order, order_id)
+                
+                # Send confirmation email
+                order = await db.orders.find_one({"id": order_id}, {"_id": 0})
+                if order:
+                    background_tasks.add_task(send_order_confirmation, order)
+                
+                logger.info(f"Order {order_id} paid via Stripe - CJ fulfillment triggered")
+        
+        return {"status": "received"}
+    except Exception as e:
+        logger.error(f"Stripe webhook error: {e}")
+        return {"status": "error", "message": str(e)}
 
 async def create_cj_order(order_id: str):
     """Background task to create CJ Dropshipping order"""
@@ -981,7 +908,7 @@ async def get_order(order_id: str, user=Depends(get_current_user)):
             order["cj_status"] = cj_status.get("orderStatus")
             new_tracking = cj_status.get("trackNumber")
             
-            # If we got tracking and haven't pushed to PayPal yet
+            # If we got tracking, update the order
             if new_tracking and new_tracking != order.get("tracking_number"):
                 order["tracking_number"] = new_tracking
                 
@@ -995,15 +922,7 @@ async def get_order(order_id: str, user=Depends(get_current_user)):
                     }}
                 )
                 
-                # Push tracking to PayPal to release funds
-                if order.get("paypal_capture_id"):
-                    await paypal_service.add_tracking(
-                        order["paypal_capture_id"],
-                        new_tracking,
-                        "CJ Packet",
-                        order.get("order_number", "")
-                    )
-                    logger.info(f"Tracking pushed to PayPal for order {order_id}")
+                logger.info(f"Tracking updated for order {order_id}: {new_tracking}")
                 
                 # Send shipping notification email
                 asyncio.create_task(send_shipping_notification(order, new_tracking))
@@ -1141,34 +1060,6 @@ async def seed_demo_products():
     
     await db.products.insert_many(demo_products)
     return demo_products
-
-# ============ PayPal Webhook ============
-
-@api_router.post("/webhooks/paypal")
-async def paypal_webhook(request: dict, background_tasks: BackgroundTasks):
-    """Handle PayPal webhooks for payment status updates"""
-    event_type = request.get("event_type", "")
-    resource = request.get("resource", {})
-    
-    logger.info(f"PayPal webhook received: {event_type}")
-    
-    if event_type == "PAYMENT.CAPTURE.COMPLETED":
-        order_id = resource.get("custom_id") or resource.get("invoice_id")
-        if order_id:
-            await db.orders.update_one(
-                {"order_number": order_id},
-                {"$set": {
-                    "payment_status": "paid",
-                    "status": "processing",
-                    "updated_at": datetime.now(timezone.utc).isoformat()
-                }}
-            )
-            
-            order = await db.orders.find_one({"order_number": order_id}, {"_id": 0})
-            if order:
-                background_tasks.add_task(create_cj_order, order["id"])
-    
-    return {"status": "received"}
 
 # ============ Email Service ============
 
@@ -1662,7 +1553,7 @@ async def auto_sync_cj_products():
         await asyncio.sleep(6 * 60 * 60)  # 6 hours
 
 async def auto_sync_tracking():
-    """Background task to sync tracking from CJ and push to PayPal every 30 mins"""
+    """Background task to sync tracking from CJ every 30 mins"""
     while True:
         try:
             # Find orders that are processing but don't have tracking yet
@@ -1692,15 +1583,7 @@ async def auto_sync_tracking():
                             }}
                         )
                         
-                        # Push to PayPal to release funds
-                        if order.get("paypal_capture_id"):
-                            await paypal_service.add_tracking(
-                                order["paypal_capture_id"],
-                                tracking,
-                                "CJ Packet",
-                                order.get("order_number", "")
-                            )
-                            logger.info(f"Auto-pushed tracking to PayPal: {order['order_number']} -> {tracking}")
+                        logger.info(f"Tracking synced: {order['order_number']} -> {tracking}")
                         
                         # Send shipping email
                         await send_shipping_notification(order, tracking)

@@ -665,7 +665,7 @@ const HomePage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { icon: Truck, title: "Free Shipping", desc: "Orders over $50" },
-              { icon: Shield, title: "Secure Payment", desc: "PayPal Protected" },
+              { icon: Shield, title: "Secure Payment", desc: "Stripe Protected" },
               { icon: Package, title: "Fast Delivery", desc: "Worldwide Shipping" },
               { icon: CreditCard, title: "Easy Returns", desc: "30-day guarantee" },
             ].map((item, i) => (
@@ -744,7 +744,7 @@ const HomePage = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">How Novaxs Works</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: "01", title: "Shop & Checkout", desc: "Browse our curated collection and pay securely with PayPal." },
+              { step: "01", title: "Shop & Checkout", desc: "Browse our curated collection and pay securely with Stripe." },
               { step: "02", title: "We Handle Everything", desc: "Your order is automatically processed and shipped from our global warehouses." },
               { step: "03", title: "Delivered to You", desc: "Sit back and relax while your order arrives at your doorstep." },
             ].map((item, i) => (
@@ -1041,7 +1041,7 @@ const ProductDetailPage = () => {
             </div>
             <div className="flex items-center gap-3 text-sm text-slate-600">
               <Shield className="w-5 h-5 text-green-500" />
-              <span>Secure PayPal checkout</span>
+              <span>Secure Stripe checkout</span>
             </div>
             <div className="flex items-center gap-3 text-sm text-slate-600">
               <Package className="w-5 h-5 text-green-500" />
@@ -1408,6 +1408,7 @@ const CheckoutPage = () => {
 
     try {
       const token = localStorage.getItem("token");
+      // Step 1: Create order
       const res = await axios.post(`${API}/orders`, {
         shipping_address: formData,
         cart_id: localStorage.getItem("cartId")
@@ -1415,24 +1416,23 @@ const CheckoutPage = () => {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
-      const { order, paypal_order_id } = res.data;
+      const { order } = res.data;
       
-      // For demo - simulate successful payment
-      if (paypal_order_id) {
-        const captureRes = await axios.post(`${API}/orders/${order.id}/capture?paypal_order_id=${paypal_order_id}`);
-        if (captureRes.data.success) {
-          toast.success("Order placed successfully!");
-          fetchCart();
-          navigate(`/order-confirmation/${order.id}`);
-        }
+      // Step 2: Create Stripe checkout session
+      const stripeRes = await axios.post(`${API}/checkout/stripe`, {
+        order_id: order.id,
+        origin_url: window.location.origin + "/"
+      });
+      
+      // Step 3: Redirect to Stripe
+      if (stripeRes.data.checkout_url) {
+        window.location.href = stripeRes.data.checkout_url;
       } else {
-        toast.success("Order created!");
-        fetchCart();
-        navigate(`/order-confirmation/${order.id}`);
+        toast.error("Failed to create payment session");
+        setLoading(false);
       }
     } catch (e) {
       toast.error(e.response?.data?.detail || "Failed to place order");
-    } finally {
       setLoading(false);
     }
   };
@@ -1547,10 +1547,10 @@ const CheckoutPage = () => {
 
               <h2 className="text-xl font-bold mb-6">Payment</h2>
               <div className="bg-slate-50 rounded-xl p-6 flex items-center gap-4">
-                <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg" alt="PayPal" className="h-12" />
+                <CreditCard className="w-12 h-12 text-slate-600" />
                 <div>
-                  <p className="font-medium">Pay with PayPal</p>
-                  <p className="text-sm text-slate-500">Fast, secure checkout</p>
+                  <p className="font-medium">Pay with Stripe</p>
+                  <p className="text-sm text-slate-500">Secure card payment</p>
                 </div>
               </div>
 
@@ -1621,10 +1621,15 @@ const CheckoutPage = () => {
 // Order Confirmation Page
 const OrderConfirmationPage = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paymentChecking, setPaymentChecking] = useState(false);
+  const { fetchCart } = useApp();
 
   useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    
     const fetchOrder = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -1632,6 +1637,11 @@ const OrderConfirmationPage = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         setOrder(res.data);
+        
+        // If we have a session_id, poll for payment status
+        if (sessionId && res.data.payment_status !== "paid") {
+          pollPaymentStatus(sessionId, res.data);
+        }
       } catch (e) {
         console.error("Error fetching order:", e);
       } finally {
@@ -1639,7 +1649,36 @@ const OrderConfirmationPage = () => {
       }
     };
     fetchOrder();
-  }, [id]);
+  }, [id, searchParams]);
+
+  const pollPaymentStatus = async (sessionId, currentOrder, attempts = 0) => {
+    if (attempts >= 5 || currentOrder.payment_status === "paid") {
+      setPaymentChecking(false);
+      fetchCart();
+      return;
+    }
+    
+    setPaymentChecking(true);
+    try {
+      const res = await axios.get(`${API}/checkout/status/${sessionId}?origin_url=${window.location.origin}/`);
+      if (res.data.payment_status === "paid") {
+        // Refetch order to get updated status
+        const token = localStorage.getItem("token");
+        const orderRes = await axios.get(`${API}/orders/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        setOrder(orderRes.data);
+        setPaymentChecking(false);
+        fetchCart();
+        toast.success("Payment confirmed!");
+      } else {
+        setTimeout(() => pollPaymentStatus(sessionId, currentOrder, attempts + 1), 2000);
+      }
+    } catch (e) {
+      console.error("Error checking payment:", e);
+      setTimeout(() => pollPaymentStatus(sessionId, currentOrder, attempts + 1), 2000);
+    }
+  };
 
   if (loading) {
     return (
@@ -1656,7 +1695,9 @@ const OrderConfirmationPage = () => {
       </div>
       
       <h1 className="text-3xl font-bold mb-4">Order Confirmed!</h1>
-      <p className="text-slate-600 mb-8">Thank you for your purchase. Your order is being processed.</p>
+      <p className="text-slate-600 mb-8">
+        {paymentChecking ? "Confirming your payment..." : "Thank you for your purchase. Your order is being processed."}
+      </p>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm text-left mb-8">
         <div className="flex justify-between items-center mb-4">
@@ -1664,8 +1705,14 @@ const OrderConfirmationPage = () => {
           <span className="font-mono font-bold" data-testid="order-number">{order?.order_number}</span>
         </div>
         <div className="flex justify-between items-center mb-4">
-          <span className="text-slate-600">Status</span>
-          <Badge className="bg-green-100 text-green-700">{order?.status}</Badge>
+          <span className="text-slate-600">Payment Status</span>
+          <Badge className={order?.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+            {paymentChecking ? "Confirming..." : order?.payment_status}
+          </Badge>
+        </div>
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-slate-600">Order Status</span>
+          <Badge className="bg-blue-100 text-blue-700">{order?.status}</Badge>
         </div>
         <div className="flex justify-between items-center mb-4">
           <span className="text-slate-600">Total</span>
