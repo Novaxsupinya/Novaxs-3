@@ -506,24 +506,13 @@ const HomePage = () => {
       {/* Hero Section - Bento Grid */}
       <section className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          {/* Main Hero */}
-          <div className="md:col-span-8 relative rounded-3xl overflow-hidden aspect-[16/9] md:aspect-auto md:h-[500px] group">
+          {/* Main Hero - NOVAXS Logo */}
+          <div className="md:col-span-8 rounded-3xl overflow-hidden md:h-[500px] flex items-center justify-center" style={{ backgroundColor: '#0A0A1F' }}>
             <img 
-              src={heroImages["womens-fashion"]}
-              alt="Fashion Collection"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
+              alt="NOVAXS - The future of e-commerce"
+              className="w-full h-full object-contain"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-8 left-8 right-8 text-white">
-              <Badge className="bg-orange-500 mb-4">NEW COLLECTION</Badge>
-              <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Discover Amazing Deals</h2>
-              <p className="text-white/80 mb-6 max-w-xl">Shop the latest trends with fast worldwide shipping. Quality products, unbeatable prices.</p>
-              <Link to="/products?category=womens-fashion">
-                <Button className="bg-orange-500 hover:bg-orange-600 rounded-full px-8 h-12 text-base font-semibold" data-testid="shop-now-btn">
-                  Shop Now <ChevronRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
-            </div>
           </div>
 
           {/* Secondary Cards */}
