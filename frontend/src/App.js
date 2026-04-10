@@ -508,26 +508,16 @@ const HomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           {/* Main Hero - NOVAXS Logo */}
           <div 
-            className="md:col-span-8 overflow-hidden md:h-[500px]"
+            className="md:col-span-8 overflow-hidden md:h-[500px] aspect-[4/3] md:aspect-auto"
             style={{ 
-              backgroundColor: '#0A0A1F', 
-              borderRadius: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              background: 'linear-gradient(135deg, #0A0A1F 0%, #0D0D24 50%, #0A0A1F 100%)',
+              borderRadius: '40px'
             }}
           >
             <img 
               src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
               alt="NOVAXS - The future of e-commerce"
-              style={{ 
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                objectPosition: 'center',
-                borderRadius: '40px',
-                backgroundColor: '#0A0A1F'
-              }}
+              className="w-full h-full object-contain"
             />
           </div>
 
