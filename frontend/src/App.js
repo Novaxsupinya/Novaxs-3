@@ -212,21 +212,28 @@ const Header = () => {
             </div>
           </form>
 
-          {/* Right: Cart Icon */}
-          <Link to="/checkout" className="relative p-2" data-testid="cart-btn">
-            <ShoppingCart 
-              className="w-7 h-7" 
-              style={{ color: '#A020F0', filter: 'drop-shadow(0 0 8px rgba(160, 32, 240, 0.6))' }} 
-            />
-            {cartItemsCount > 0 && (
-              <span 
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
-                style={{ backgroundColor: '#A020F0' }}
-              >
-                {cartItemsCount}
-              </span>
-            )}
-          </Link>
+          {/* Right: Cart Icon with Drawer */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="relative p-2" data-testid="cart-btn">
+                <ShoppingCart 
+                  className="w-7 h-7" 
+                  style={{ color: '#A020F0', filter: 'drop-shadow(0 0 8px rgba(160, 32, 240, 0.6))' }} 
+                />
+                {cartItemsCount > 0 && (
+                  <span 
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
+                    style={{ backgroundColor: '#A020F0' }}
+                  >
+                    {cartItemsCount}
+                  </span>
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent className="w-full sm:max-w-lg">
+              <CartDrawer />
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Mobile Search */}

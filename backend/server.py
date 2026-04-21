@@ -26,7 +26,7 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Create the main app
-app = FastAPI(title="Novaxs E-commerce API")
+app = FastAPI(title="NOVAXS E-commerce API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -1097,7 +1097,7 @@ async def send_order_confirmation(order: dict):
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <div style="background:#F97316;color:white;padding:20px;text-align:center;">
-            <h1 style="margin:0;">Novaxs</h1>
+            <h1 style="margin:0;">NOVAXS</h1>
         </div>
         <div style="padding:30px;background:#fff;">
             <h2 style="color:#0F172A;">Order Confirmed! 🎉</h2>
@@ -1119,7 +1119,7 @@ async def send_order_confirmation(order: dict):
             </div>
         </div>
         <div style="background:#0F172A;color:#94A3B8;padding:20px;text-align:center;font-size:12px;">
-            <p>© 2024 Novaxs. All rights reserved.</p>
+            <p>© 2024 NOVAXS. All rights reserved.</p>
         </div>
     </div>
     """
@@ -1134,7 +1134,7 @@ async def send_shipping_notification(order: dict, tracking_number: str):
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <div style="background:#F97316;color:white;padding:20px;text-align:center;">
-            <h1 style="margin:0;">Novaxs</h1>
+            <h1 style="margin:0;">NOVAXS</h1>
         </div>
         <div style="padding:30px;background:#fff;">
             <h2 style="color:#0F172A;">Your Order Has Shipped! 📦</h2>
@@ -1146,7 +1146,7 @@ async def send_shipping_notification(order: dict, tracking_number: str):
             <p><strong>Order Number:</strong> {order.get('order_number')}</p>
         </div>
         <div style="background:#0F172A;color:#94A3B8;padding:20px;text-align:center;font-size:12px;">
-            <p>© 2024 Novaxs. All rights reserved.</p>
+            <p>© 2024 NOVAXS. All rights reserved.</p>
         </div>
     </div>
     """
@@ -1326,16 +1326,16 @@ async def admin_send_test_email(admin=Depends(get_admin_user)):
     html = """
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
         <div style="background:#F97316;color:white;padding:20px;text-align:center;">
-            <h1 style="margin:0;">Novaxs</h1>
+            <h1 style="margin:0;">NOVAXS</h1>
         </div>
         <div style="padding:30px;background:#fff;text-align:center;">
             <h2>Email Configuration Successful! ✅</h2>
-            <p>Your Novaxs email notifications are working correctly.</p>
+            <p>Your NOVAXS email notifications are working correctly.</p>
             <p style="color:#666;font-size:14px;margin-top:20px;">Note: In test mode, emails go to your Resend verified email. Verify a domain at resend.com/domains to send to customers.</p>
         </div>
     </div>
     """
-    result = await send_email(admin_email, "Novaxs - Email Test Successful", html)
+    result = await send_email(admin_email, "NOVAXS - Email Test Successful", html)
     if result:
         return {"message": f"Test email sent to {admin_email}", "email_id": result.get("id")}
     return {"message": "Email in TEST MODE - verify domain at resend.com/domains to send to customers. Current emails go to your Resend account email only.", "api_key_found": True, "note": "Add a domain at resend.com to enable customer emails"}
@@ -1431,7 +1431,7 @@ async def contact_support(request: ContactRequest):
         html = f"""
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
             <div style="background:#F97316;color:white;padding:20px;text-align:center;">
-                <h1 style="margin:0;">Novaxs</h1>
+                <h1 style="margin:0;">NOVAXS</h1>
             </div>
             <div style="padding:30px;background:#fff;">
                 <h2>Customer Support Request Received</h2>
@@ -1451,7 +1451,7 @@ async def contact_support(request: ContactRequest):
         html = f"""
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
             <div style="background:#F97316;color:white;padding:20px;text-align:center;">
-                <h1 style="margin:0;">Novaxs</h1>
+                <h1 style="margin:0;">NOVAXS</h1>
             </div>
             <div style="padding:30px;background:#fff;">
                 <h2>We've Received Your Message!</h2>
@@ -1603,7 +1603,7 @@ async def startup_event():
     # Start auto-sync tasks
     asyncio.create_task(auto_sync_cj_products())
     asyncio.create_task(auto_sync_tracking())
-    logger.info("Novaxs API started - Auto CJ sync & tracking enabled")
+    logger.info("NOVAXS API started - Auto CJ sync & tracking enabled")
 
 # Include the router
 app.include_router(api_router)

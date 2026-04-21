@@ -33,7 +33,7 @@ export const AdminLogin = ({ onLogin }) => {
       const res = await axios.post(`${API}/admin/login`, { email, password });
       localStorage.setItem("adminToken", res.data.access_token);
       onLogin(res.data.access_token);
-      toast.success("Welcome to Novaxs Admin!");
+      toast.success("Welcome to NOVAXS Admin!");
     } catch (e) {
       toast.error(e.response?.data?.detail || "Login failed");
     } finally {
