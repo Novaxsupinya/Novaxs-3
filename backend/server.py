@@ -38,9 +38,10 @@ JWT_ALGORITHM = "HS256"
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'novaxs6969@gmail.com')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'NovaxsAdmin2024!')
 
-# CJ Dropshipping Configuration
-CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1"
-CJ_API_KEY = os.environ.get('CJ_API_KEY', '')
+# EPROLO Configuration
+EPROLO_API_BASE = "https://openapi.eprolo.com"
+EPROLO_API_KEY = os.environ.get('EPROLO_API_KEY', '')
+EPROLO_API_SECRET = os.environ.get('EPROLO_API_SECRET', '')
 
 # Stripe Configuration
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
@@ -91,7 +92,7 @@ class ProductVariant(BaseModel):
 
 class Product(BaseModel):
     id: str
-    cj_pid: Optional[str] = None
+    eprolo_pid: Optional[str] = None
     name: str
     description: str
     category: str
@@ -189,7 +190,7 @@ class Order(BaseModel):
     status: str = "pending"
     payment_status: str = "pending"
     stripe_session_id: Optional[str] = None
-    cj_order_id: Optional[str] = None
+    eprolo_order_id: Optional[str] = None
     tracking_number: Optional[str] = None
     shipping_address: Dict[str, Any] = {}
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -234,173 +235,209 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 def generate_order_number():
     return f"NVX{datetime.now().strftime('%Y%m%d')}{str(uuid.uuid4())[:8].upper()}"
 
-# ============ CJ Dropshipping Service ============
+# ============ EPROLO Dropshipping Service ============
 
-class CJDropshippingService:
+import hashlib
+import hmac
+import time
+
+class EproloService:
     def __init__(self):
-        self.base_url = CJ_API_BASE
-        self.api_key = CJ_API_KEY
+        self.base_url = EPROLO_API_BASE
+        self.api_key = EPROLO_API_KEY
+        self.api_secret = EPROLO_API_SECRET
         self.access_token = None
         self.token_expiry = None
     
+    def _generate_signature(self, params: Dict[str, Any], timestamp: str) -> str:
+        """Generate HMAC-SHA256 signature for EPROLO API"""
+        # Sort parameters and create signature string
+        sorted_params = sorted(params.items())
+        sign_str = "&".join([f"{k}={v}" for k, v in sorted_params])
+        sign_str = f"{sign_str}&timestamp={timestamp}&secret={self.api_secret}"
+        
+        signature = hashlib.sha256(sign_str.encode()).hexdigest().upper()
+        return signature
+    
+    def _get_headers(self) -> Dict[str, str]:
+        """Get common headers for EPROLO API requests"""
+        timestamp = str(int(time.time() * 1000))
+        return {
+            "Content-Type": "application/json",
+            "Api-Key": self.api_key,
+            "Timestamp": timestamp
+        }
+    
     async def get_access_token(self):
-        """Get CJ access token"""
-        if not self.api_key:
-            logger.warning("CJ API Key not configured")
+        """Get EPROLO access token"""
+        if not self.api_key or not self.api_secret:
+            logger.warning("EPROLO API credentials not configured")
             return None
         
         if self.access_token and self.token_expiry and datetime.now(timezone.utc) < self.token_expiry:
             return self.access_token
         
         try:
+            timestamp = str(int(time.time() * 1000))
+            params = {"apiKey": self.api_key}
+            signature = self._generate_signature(params, timestamp)
+            
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.base_url}/authentication/getAccessToken",
-                    json={"apiKey": self.api_key},
+                    f"{self.base_url}/api/v1/auth/token",
+                    json={
+                        "apiKey": self.api_key,
+                        "signature": signature,
+                        "timestamp": timestamp
+                    },
                     headers={"Content-Type": "application/json"}
                 )
                 data = response.json()
-                if data.get("code") == 200:
-                    self.access_token = data["data"]["accessToken"]
-                    self.token_expiry = datetime.now(timezone.utc) + timedelta(days=14)
+                logger.info(f"EPROLO token response: {data}")
+                if data.get("code") == 0 or data.get("success"):
+                    self.access_token = data.get("data", {}).get("token") or data.get("token")
+                    self.token_expiry = datetime.now(timezone.utc) + timedelta(hours=2)
                     return self.access_token
         except Exception as e:
-            logger.error(f"Error getting CJ access token: {e}")
+            logger.error(f"Error getting EPROLO access token: {e}")
         return None
     
     async def get_products(self, keyword: str = "", category_id: str = "", page: int = 1, size: int = 20):
-        """Get products from CJ"""
+        """Get products from EPROLO"""
         token = await self.get_access_token()
-        if not token:
-            return {"products": [], "total": 0}
+        headers = self._get_headers()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         
         try:
-            params = {"page": page, "size": size}
+            params = {"page": page, "pageSize": size}
             if keyword:
-                params["keyWord"] = keyword
+                params["keyword"] = keyword
             if category_id:
                 params["categoryId"] = category_id
             
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/product/listV2",
+                    f"{self.base_url}/api/v1/product/list",
                     params=params,
-                    headers={"CJ-Access-Token": token}
+                    headers=headers
                 )
                 data = response.json()
-                if data.get("code") == 200:
-                    return {
-                        "products": data["data"].get("content", []),
-                        "total": data["data"].get("totalRecords", 0)
-                    }
+                logger.info(f"EPROLO products response: {data.get('code', 'unknown')}")
+                if data.get("code") == 0 or data.get("success"):
+                    products = data.get("data", {}).get("list", []) or data.get("data", [])
+                    total = data.get("data", {}).get("total", len(products))
+                    return {"products": products, "total": total}
         except Exception as e:
-            logger.error(f"Error getting CJ products: {e}")
+            logger.error(f"Error getting EPROLO products: {e}")
         return {"products": [], "total": 0}
     
     async def get_product_details(self, pid: str):
-        """Get product details from CJ"""
+        """Get product details from EPROLO"""
         token = await self.get_access_token()
-        if not token:
-            return None
+        headers = self._get_headers()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/product/query",
-                    params={"pid": pid},
-                    headers={"CJ-Access-Token": token}
+                    f"{self.base_url}/api/v1/product/detail",
+                    params={"productId": pid},
+                    headers=headers
                 )
                 data = response.json()
-                if data.get("code") == 200:
-                    return data["data"]
+                if data.get("code") == 0 or data.get("success"):
+                    return data.get("data")
         except Exception as e:
-            logger.error(f"Error getting CJ product details: {e}")
+            logger.error(f"Error getting EPROLO product details: {e}")
         return None
     
     async def get_categories(self):
-        """Get categories from CJ"""
+        """Get categories from EPROLO"""
         token = await self.get_access_token()
-        if not token:
-            return []
+        headers = self._get_headers()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/product/getCategory",
-                    headers={"CJ-Access-Token": token}
+                    f"{self.base_url}/api/v1/product/categories",
+                    headers=headers
                 )
                 data = response.json()
-                if data.get("code") == 200:
-                    return data["data"]
+                if data.get("code") == 0 or data.get("success"):
+                    return data.get("data", [])
         except Exception as e:
-            logger.error(f"Error getting CJ categories: {e}")
+            logger.error(f"Error getting EPROLO categories: {e}")
         return []
     
     async def create_order(self, order_data: Dict[str, Any]):
-        """Create order in CJ"""
+        """Create order in EPROLO"""
         token = await self.get_access_token()
-        if not token:
-            return None
+        headers = self._get_headers()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.base_url}/shopping/order/createOrderV2",
+                    f"{self.base_url}/api/v1/order/create",
                     json=order_data,
-                    headers={
-                        "CJ-Access-Token": token,
-                        "Content-Type": "application/json"
-                    }
+                    headers=headers
                 )
                 data = response.json()
-                if data.get("code") == 200:
-                    return data["data"]
+                logger.info(f"EPROLO order create response: {data}")
+                if data.get("code") == 0 or data.get("success"):
+                    return data.get("data")
         except Exception as e:
-            logger.error(f"Error creating CJ order: {e}")
+            logger.error(f"Error creating EPROLO order: {e}")
         return None
     
     async def get_order_status(self, order_id: str):
-        """Get order status from CJ"""
+        """Get order status from EPROLO"""
         token = await self.get_access_token()
-        if not token:
-            return None
+        headers = self._get_headers()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/shopping/order/getOrderDetail",
+                    f"{self.base_url}/api/v1/order/detail",
                     params={"orderId": order_id},
-                    headers={"CJ-Access-Token": token}
+                    headers=headers
                 )
                 data = response.json()
-                if data.get("code") == 200:
-                    return data["data"]
+                if data.get("code") == 0 or data.get("success"):
+                    return data.get("data")
         except Exception as e:
-            logger.error(f"Error getting CJ order status: {e}")
+            logger.error(f"Error getting EPROLO order status: {e}")
         return None
     
     async def get_inventory(self, vid: str):
         """Get inventory for a variant"""
         token = await self.get_access_token()
-        if not token:
-            return 0
+        headers = self._get_headers()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/product/stock/queryByVid",
-                    params={"vid": vid},
-                    headers={"CJ-Access-Token": token}
+                    f"{self.base_url}/api/v1/product/inventory",
+                    params={"variantId": vid},
+                    headers=headers
                 )
                 data = response.json()
-                if data.get("code") == 200 and data["data"]:
-                    total = sum(item.get("totalInventoryNum", 0) for item in data["data"])
-                    return total
+                if data.get("code") == 0 or data.get("success"):
+                    return data.get("data", {}).get("quantity", 0)
         except Exception as e:
-            logger.error(f"Error getting CJ inventory: {e}")
+            logger.error(f"Error getting EPROLO inventory: {e}")
         return 0
 
-cj_service = CJDropshippingService()
+eprolo_service = EproloService()
 
 # ============ Stripe Service ============
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
@@ -815,7 +852,7 @@ async def stripe_webhook(request: Request, background_tasks: BackgroundTasks):
                 )
                 
                 # Trigger CJ fulfillment
-                background_tasks.add_task(create_cj_order, order_id)
+                background_tasks.add_task(create_eprolo_order, order_id)
                 
                 # Send confirmation email
                 order = await db.orders.find_one({"id": order_id}, {"_id": 0})
@@ -829,60 +866,61 @@ async def stripe_webhook(request: Request, background_tasks: BackgroundTasks):
         logger.error(f"Stripe webhook error: {e}")
         return {"status": "error", "message": str(e)}
 
-async def create_cj_order(order_id: str):
-    """Background task to create CJ Dropshipping order"""
+async def create_eprolo_order(order_id: str):
+    """Background task to create EPROLO order"""
     order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     if not order:
         return
     
     shipping = order.get("shipping_address", {})
     
-    # Build CJ order products
+    # Build EPROLO order products
     products = []
     for item in order.get("items", []):
         product = await db.products.find_one({"id": item["product_id"]}, {"_id": 0})
-        if product and product.get("cj_pid"):
+        if product and product.get("eprolo_pid"):
             variant_id = item.get("variant_id") or (product.get("variants", [{}])[0].get("vid") if product.get("variants") else None)
-            if variant_id:
-                products.append({
-                    "vid": variant_id,
-                    "quantity": item["quantity"]
-                })
+            products.append({
+                "productId": product.get("eprolo_pid"),
+                "variantId": variant_id,
+                "quantity": item["quantity"],
+                "sku": product.get("sku", "")
+            })
     
     if not products:
-        logger.warning(f"No CJ products found for order {order_id}")
+        logger.warning(f"No EPROLO products found for order {order_id}")
         return
     
-    cj_order_data = {
+    eprolo_order_data = {
         "orderNumber": order["order_number"],
-        "shippingZip": shipping.get("zip_code", ""),
-        "shippingCountryCode": shipping.get("country_code", "US"),
-        "shippingCountry": shipping.get("country", "United States"),
-        "shippingProvince": shipping.get("state", ""),
-        "shippingCity": shipping.get("city", ""),
-        "shippingPhone": shipping.get("phone", ""),
-        "shippingCustomerName": shipping.get("name", ""),
-        "shippingAddress": shipping.get("address", ""),
-        "shippingAddress2": shipping.get("address2", ""),
-        "email": shipping.get("email", ""),
-        "payType": 2,
-        "logisticName": "CJPacket Ordinary",
-        "fromCountryCode": "CN",
+        "shippingAddress": {
+            "firstName": shipping.get("name", "").split()[0] if shipping.get("name") else "",
+            "lastName": " ".join(shipping.get("name", "").split()[1:]) if shipping.get("name") else "",
+            "address1": shipping.get("address", ""),
+            "address2": shipping.get("address2", ""),
+            "city": shipping.get("city", ""),
+            "province": shipping.get("state", ""),
+            "country": shipping.get("country", "United States"),
+            "countryCode": shipping.get("country_code", "US"),
+            "zip": shipping.get("zip_code", ""),
+            "phone": shipping.get("phone", ""),
+            "email": shipping.get("email", "")
+        },
         "products": products
     }
     
-    cj_result = await cj_service.create_order(cj_order_data)
+    eprolo_result = await eprolo_service.create_order(eprolo_order_data)
     
-    if cj_result:
+    if eprolo_result:
         await db.orders.update_one(
             {"id": order_id},
             {"$set": {
-                "cj_order_id": cj_result.get("orderId"),
+                "eprolo_order_id": eprolo_result.get("orderId") or eprolo_result.get("id"),
                 "status": "processing",
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
-        logger.info(f"CJ order created: {cj_result.get('orderId')} for order {order_id}")
+        logger.info(f"EPROLO order created: {eprolo_result.get('orderId') or eprolo_result.get('id')} for order {order_id}")
 
 @api_router.get("/orders")
 async def get_orders(user=Depends(get_current_user), page: int = 1, limit: int = 10):
@@ -901,12 +939,12 @@ async def get_order(order_id: str, user=Depends(get_current_user)):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # Get CJ order status if available
-    if order.get("cj_order_id"):
-        cj_status = await cj_service.get_order_status(order["cj_order_id"])
-        if cj_status:
-            order["cj_status"] = cj_status.get("orderStatus")
-            new_tracking = cj_status.get("trackNumber")
+    # Get EPROLO order status if available
+    if order.get("eprolo_order_id"):
+        eprolo_status = await eprolo_service.get_order_status(order["eprolo_order_id"])
+        if eprolo_status:
+            order["eprolo_status"] = eprolo_status.get("orderStatus") or eprolo_status.get("status")
+            new_tracking = eprolo_status.get("trackingNumber") or eprolo_status.get("trackNumber")
             
             # If we got tracking, update the order
             if new_tracking and new_tracking != order.get("tracking_number"):
@@ -944,27 +982,27 @@ async def track_order(order_number: str):
         "items_count": len(order.get("items", []))
     }
 
-# ============ CJ Integration Routes ============
+# ============ EPROLO Integration Routes ============
 
-@api_router.get("/cj/products")
-async def get_cj_products(keyword: str = "", category_id: str = "", page: int = 1, size: int = 20):
-    """Get products directly from CJ Dropshipping"""
-    result = await cj_service.get_products(keyword, category_id, page, size)
+@api_router.get("/eprolo/products")
+async def get_eprolo_products(keyword: str = "", category_id: str = "", page: int = 1, size: int = 20):
+    """Get products directly from EPROLO"""
+    result = await eprolo_service.get_products(keyword, category_id, page, size)
     return result
 
-@api_router.get("/cj/categories")
-async def get_cj_categories():
-    """Get categories from CJ Dropshipping"""
-    return await cj_service.get_categories()
+@api_router.get("/eprolo/categories")
+async def get_eprolo_categories():
+    """Get categories from EPROLO"""
+    return await eprolo_service.get_categories()
 
-@api_router.post("/cj/sync")
-async def sync_cj_products(background_tasks: BackgroundTasks, keyword: str = "", limit: int = 50):
-    """Sync products from CJ to local database"""
-    background_tasks.add_task(sync_products_from_cj, keyword, limit)
+@api_router.post("/eprolo/sync")
+async def sync_eprolo_products(background_tasks: BackgroundTasks, keyword: str = "", limit: int = 50):
+    """Sync products from EPROLO to local database"""
+    background_tasks.add_task(sync_products_from_eprolo, keyword, limit)
     return {"message": "Product sync started", "keyword": keyword, "limit": limit}
 
-async def sync_products_from_cj(keyword: str = "", limit: int = 50):
-    """Background task to sync CJ products"""
+async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
+    """Background task to sync EPROLO products"""
     categories_map = {
         "women": "womens-fashion",
         "men": "mens-fashion", 
@@ -978,46 +1016,47 @@ async def sync_products_from_cj(keyword: str = "", limit: int = 50):
     keywords = ["women dress", "men shirt", "pet toy", "headphones", "skincare", "camping"] if not keyword else [keyword]
     
     for kw in keywords:
-        result = await cj_service.get_products(kw, "", 1, limit // len(keywords))
+        result = await eprolo_service.get_products(kw, "", 1, limit // len(keywords))
         
-        for cj_product in result.get("products", []):
-            if isinstance(cj_product, dict):
-                product_list = cj_product.get("productList", [])
+        for eprolo_product in result.get("products", []):
+            if isinstance(eprolo_product, dict):
+                product_list = eprolo_product.get("productList", []) if eprolo_product.get("productList") else [eprolo_product]
             else:
-                product_list = [cj_product]
+                product_list = [eprolo_product]
             
             for prod in product_list:
                 category = "electronics"
                 for key, cat in categories_map.items():
-                    if key in kw.lower() or key in prod.get("nameEn", "").lower():
+                    prod_name = prod.get("name", "") or prod.get("nameEn", "") or ""
+                    if key in kw.lower() or key in prod_name.lower():
                         category = cat
                         break
                 
                 product_id = str(uuid.uuid4())
                 product = {
                     "id": product_id,
-                    "cj_pid": prod.get("id"),
-                    "name": prod.get("nameEn", "Product"),
+                    "eprolo_pid": prod.get("id") or prod.get("productId"),
+                    "name": prod.get("name") or prod.get("nameEn", "Product"),
                     "description": prod.get("description", "High quality product from trusted suppliers."),
                     "category": category,
-                    "image": prod.get("bigImage", ""),
-                    "images": [prod.get("bigImage", "")],
-                    "price": float(prod.get("sellPrice", 0) or prod.get("nowPrice", 0) or 9.99),
-                    "compare_price": float(prod.get("sellPrice", 0)) if prod.get("nowPrice") else None,
+                    "image": prod.get("image") or prod.get("bigImage", ""),
+                    "images": [prod.get("image") or prod.get("bigImage", "")],
+                    "price": float(prod.get("price", 0) or prod.get("sellPrice", 0) or 9.99),
+                    "compare_price": float(prod.get("comparePrice", 0)) if prod.get("comparePrice") else None,
                     "variants": [],
-                    "inventory": prod.get("warehouseInventoryNum", 100),
+                    "inventory": prod.get("inventory", 100) or 100,
                     "rating": 4.5,
-                    "reviews_count": prod.get("listedNum", 0),
+                    "reviews_count": prod.get("soldCount", 0) or 0,
                     "is_active": True,
                     "tags": [kw.lower()],
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
                 
-                existing = await db.products.find_one({"cj_pid": prod.get("id")})
+                existing = await db.products.find_one({"eprolo_pid": prod.get("id") or prod.get("productId")})
                 if not existing:
                     await db.products.insert_one(product)
     
-    logger.info(f"Product sync completed for keywords: {keywords}")
+    logger.info(f"EPROLO product sync completed for keywords: {keywords}")
 
 # ============ Seed Demo Products ============
 
@@ -1539,27 +1578,27 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 from starlette.responses import JSONResponse
 app.add_middleware(SecurityMiddleware)
 
-# ============ Auto Sync CJ Products ============
+# ============ Auto Sync EPROLO Products ============
 
-async def auto_sync_cj_products():
-    """Background task to auto-sync CJ products every 6 hours"""
+async def auto_sync_eprolo_products():
+    """Background task to auto-sync EPROLO products every 6 hours"""
     while True:
         try:
-            logger.info("Starting automatic CJ product sync...")
-            await sync_products_from_cj("", 200)
-            logger.info("CJ product sync completed")
+            logger.info("Starting automatic EPROLO product sync...")
+            await sync_products_from_eprolo("", 200)
+            logger.info("EPROLO product sync completed")
         except Exception as e:
-            logger.error(f"CJ sync error: {e}")
+            logger.error(f"EPROLO sync error: {e}")
         await asyncio.sleep(6 * 60 * 60)  # 6 hours
 
 async def auto_sync_tracking():
-    """Background task to sync tracking from CJ every 30 mins"""
+    """Background task to sync tracking from EPROLO every 30 mins"""
     while True:
         try:
             # Find orders that are processing but don't have tracking yet
             orders = await db.orders.find({
                 "status": {"$in": ["processing", "paid"]},
-                "cj_order_id": {"$exists": True, "$ne": None},
+                "eprolo_order_id": {"$exists": True, "$ne": None},
                 "$or": [
                     {"tracking_number": {"$exists": False}},
                     {"tracking_number": None},
@@ -1569,24 +1608,24 @@ async def auto_sync_tracking():
             
             for order in orders:
                 try:
-                    cj_status = await cj_service.get_order_status(order["cj_order_id"])
-                    if cj_status and cj_status.get("trackNumber"):
-                        tracking = cj_status.get("trackNumber")
-                        
-                        # Update order with tracking
-                        await db.orders.update_one(
-                            {"id": order["id"]},
-                            {"$set": {
-                                "tracking_number": tracking,
-                                "status": "shipped",
-                                "updated_at": datetime.now(timezone.utc).isoformat()
-                            }}
-                        )
-                        
-                        logger.info(f"Tracking synced: {order['order_number']} -> {tracking}")
-                        
-                        # Send shipping email
-                        await send_shipping_notification(order, tracking)
+                    eprolo_status = await eprolo_service.get_order_status(order["eprolo_order_id"])
+                    if eprolo_status:
+                        tracking = eprolo_status.get("trackingNumber") or eprolo_status.get("trackNumber")
+                        if tracking:
+                            # Update order with tracking
+                            await db.orders.update_one(
+                                {"id": order["id"]},
+                                {"$set": {
+                                    "tracking_number": tracking,
+                                    "status": "shipped",
+                                    "updated_at": datetime.now(timezone.utc).isoformat()
+                                }}
+                            )
+                            
+                            logger.info(f"Tracking synced: {order['order_number']} -> {tracking}")
+                            
+                            # Send shipping email
+                            await send_shipping_notification(order, tracking)
                         
                 except Exception as e:
                     logger.error(f"Error syncing tracking for order {order.get('id')}: {e}")
@@ -1601,9 +1640,9 @@ async def auto_sync_tracking():
 @app.on_event("startup")
 async def startup_event():
     # Start auto-sync tasks
-    asyncio.create_task(auto_sync_cj_products())
+    asyncio.create_task(auto_sync_eprolo_products())
     asyncio.create_task(auto_sync_tracking())
-    logger.info("NOVAXS API started - Auto CJ sync & tracking enabled")
+    logger.info("NOVAXS API started - Auto EPROLO sync & tracking enabled")
 
 # Include the router
 app.include_router(api_router)
