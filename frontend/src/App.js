@@ -45,12 +45,32 @@ const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetchUser(token);
-    }
-    fetchCart();
-    fetchCategories();
+    const initializeApp = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const res = await axios.get(`${API}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUser(res.data);
+        } catch {
+          localStorage.removeItem("token");
+        }
+      }
+      try {
+        const cartRes = await axios.get(`${API}/cart/${getCartId()}`);
+        setCart(cartRes.data);
+      } catch {
+        // Cart will be created on first add
+      }
+      try {
+        const catRes = await axios.get(`${API}/categories`);
+        setCategories(catRes.data);
+      } catch {
+        // Use default categories
+      }
+    };
+    initializeApp();
   }, []);
 
   const fetchUser = async (token) => {
@@ -59,7 +79,7 @@ const AppProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(res.data);
-    } catch (e) {
+    } catch {
       localStorage.removeItem("token");
     }
   };
@@ -68,8 +88,8 @@ const AppProvider = ({ children }) => {
     try {
       const res = await axios.get(`${API}/cart/${getCartId()}`);
       setCart(res.data);
-    } catch (e) {
-      console.error("Error fetching cart:", e);
+    } catch {
+      // Silent fail - cart created on first add
     }
   };
 
@@ -77,8 +97,8 @@ const AppProvider = ({ children }) => {
     try {
       const res = await axios.get(`${API}/categories`);
       setCategories(res.data);
-    } catch (e) {
-      console.error("Error fetching categories:", e);
+    } catch {
+      // Use default categories
     }
   };
 
@@ -493,8 +513,8 @@ const HomePage = () => {
       try {
         const res = await axios.get(`${API}/products/featured?limit=8`);
         setFeaturedProducts(res.data);
-      } catch (e) {
-        console.error("Error fetching featured:", e);
+      } catch {
+        // Silent fail - featured products optional
       } finally {
         setLoading(false);
       }
@@ -684,8 +704,8 @@ const ProductsPage = () => {
         const res = await axios.get(`${API}/products?${params}`);
         setProducts(res.data.products);
         setTotal(res.data.total);
-      } catch (e) {
-        console.error("Error fetching products:", e);
+      } catch {
+        // Products fetch failed
       } finally {
         setLoading(false);
       }
@@ -788,8 +808,8 @@ const ProductDetailPage = () => {
       try {
         const res = await axios.get(`${API}/products/${id}`);
         setProduct(res.data);
-      } catch (e) {
-        console.error("Error fetching product:", e);
+      } catch {
+        // Product fetch failed
       } finally {
         setLoading(false);
       }
@@ -975,8 +995,8 @@ const ProductReviews = ({ productId }) => {
       const res = await axios.get(`${API}/products/${productId}/reviews`);
       setReviews(res.data.reviews);
       setDistribution(res.data.distribution);
-    } catch (e) {
-      console.error("Error fetching reviews:", e);
+    } catch {
+      // Reviews fetch failed
     } finally {
       setLoading(false);
     }
@@ -1009,8 +1029,8 @@ const ProductReviews = ({ productId }) => {
       await axios.post(`${API}/reviews/${reviewId}/helpful`);
       toast.success("Marked as helpful");
       fetchReviews();
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // Mark helpful failed
     }
   };
 
@@ -1541,8 +1561,8 @@ const OrderConfirmationPage = () => {
         if (sessionId && res.data.payment_status !== "paid") {
           pollPaymentStatus(sessionId, res.data);
         }
-      } catch (e) {
-        console.error("Error fetching order:", e);
+      } catch {
+        // Order fetch failed
       } finally {
         setLoading(false);
       }
@@ -1573,8 +1593,7 @@ const OrderConfirmationPage = () => {
       } else {
         setTimeout(() => pollPaymentStatus(sessionId, currentOrder, attempts + 1), 2000);
       }
-    } catch (e) {
-      console.error("Error checking payment:", e);
+    } catch {
       setTimeout(() => pollPaymentStatus(sessionId, currentOrder, attempts + 1), 2000);
     }
   };
@@ -1657,8 +1676,8 @@ const OrdersPage = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setOrders(res.data.orders);
-      } catch (e) {
-        console.error("Error fetching orders:", e);
+      } catch {
+        // Orders fetch failed
       } finally {
         setLoading(false);
       }

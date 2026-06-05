@@ -100,9 +100,29 @@ export const AdminDashboard = () => {
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => {
-    if (token) {
-      fetchDashboard();
-    }
+    const fetchData = async () => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const [dashRes, ordersRes, productsRes] = await Promise.all([
+          axios.get(`${API}/admin/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API}/admin/orders?limit=50`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API}/admin/products?limit=100`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        setStats(dashRes.data);
+        setOrders(ordersRes.data.orders);
+        setProducts(productsRes.data.products);
+      } catch (e) {
+        if (e.response?.status === 401) {
+          localStorage.removeItem("adminToken");
+          setToken(null);
+        }
+        toast.error("Failed to load dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, [token]);
 
   const fetchDashboard = async () => {

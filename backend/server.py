@@ -238,204 +238,116 @@ def generate_order_number():
 # ============ EPROLO Dropshipping Service ============
 
 import hashlib
-import hmac
 import time
 
 class EproloService:
     def __init__(self):
-        self.base_url = EPROLO_API_BASE
+        self.base_url = "https://openapi.eprolo.com"
         self.api_key = EPROLO_API_KEY
         self.api_secret = EPROLO_API_SECRET
-        self.access_token = None
-        self.token_expiry = None
     
-    def _generate_signature(self, params: Dict[str, Any], timestamp: str) -> str:
-        """Generate HMAC-SHA256 signature for EPROLO API"""
-        # Sort parameters and create signature string
-        sorted_params = sorted(params.items())
-        sign_str = "&".join([f"{k}={v}" for k, v in sorted_params])
-        sign_str = f"{sign_str}&timestamp={timestamp}&secret={self.api_secret}"
-        
-        signature = hashlib.sha256(sign_str.encode()).hexdigest().upper()
-        return signature
+    def _generate_signature(self, timestamp: str) -> str:
+        """Generate MD5 signature: MD5(apiKey + timestamp + apiSecret)"""
+        sign_str = f"{self.api_key}{timestamp}{self.api_secret}"
+        return hashlib.md5(sign_str.encode()).hexdigest()
+    
+    def _get_auth_params(self) -> Dict[str, str]:
+        """Get timestamp and sign for authentication"""
+        timestamp = str(int(time.time()))
+        sign = self._generate_signature(timestamp)
+        return {"timestamp": timestamp, "sign": sign}
     
     def _get_headers(self) -> Dict[str, str]:
-        """Get common headers for EPROLO API requests"""
-        timestamp = str(int(time.time() * 1000))
+        """Get headers with apiKey"""
         return {
-            "Content-Type": "application/json",
-            "Api-Key": self.api_key,
-            "Timestamp": timestamp
+            "apiKey": self.api_key,
+            "Content-Type": "application/json"
         }
     
-    async def get_access_token(self):
-        """Get EPROLO access token"""
+    async def get_products(self, keyword: str = "", page: int = 1, size: int = 20):
+        """Get products from EPROLO - GET /product_list.html"""
         if not self.api_key or not self.api_secret:
             logger.warning("EPROLO API credentials not configured")
-            return None
-        
-        if self.access_token and self.token_expiry and datetime.now(timezone.utc) < self.token_expiry:
-            return self.access_token
+            return {"products": [], "total": 0}
         
         try:
-            timestamp = str(int(time.time() * 1000))
-            params = {"apiKey": self.api_key}
-            signature = self._generate_signature(params, timestamp)
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/api/v1/auth/token",
-                    json={
-                        "apiKey": self.api_key,
-                        "signature": signature,
-                        "timestamp": timestamp
-                    },
-                    headers={"Content-Type": "application/json"}
-                )
-                data = response.json()
-                logger.info(f"EPROLO token response: {data}")
-                if data.get("code") == 0 or data.get("success"):
-                    self.access_token = data.get("data", {}).get("token") or data.get("token")
-                    self.token_expiry = datetime.now(timezone.utc) + timedelta(hours=2)
-                    return self.access_token
-        except Exception as e:
-            logger.error(f"Error getting EPROLO access token: {e}")
-        return None
-    
-    async def get_products(self, keyword: str = "", category_id: str = "", page: int = 1, size: int = 20):
-        """Get products from EPROLO"""
-        token = await self.get_access_token()
-        headers = self._get_headers()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        
-        try:
-            params = {"page": page, "pageSize": size}
+            auth = self._get_auth_params()
+            params = f"timestamp={auth['timestamp']}&sign={auth['sign']}&pageNo={page}&pageSize={size}"
             if keyword:
-                params["keyword"] = keyword
-            if category_id:
-                params["categoryId"] = category_id
+                params += f"&keyword={keyword}"
             
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/api/v1/product/list",
-                    params=params,
-                    headers=headers
+                    f"{self.base_url}/product_list.html?{params}",
+                    headers=self._get_headers()
                 )
                 data = response.json()
-                logger.info(f"EPROLO products response: {data.get('code', 'unknown')}")
-                if data.get("code") == 0 or data.get("success"):
-                    products = data.get("data", {}).get("list", []) or data.get("data", [])
+                logger.info(f"EPROLO products response: {data.get('code')}")
+                if data.get("code") == "0" or data.get("code") == 0:
+                    products = data.get("data", {}).get("list", []) or []
                     total = data.get("data", {}).get("total", len(products))
                     return {"products": products, "total": total}
         except Exception as e:
             logger.error(f"Error getting EPROLO products: {e}")
         return {"products": [], "total": 0}
     
-    async def get_product_details(self, pid: str):
-        """Get product details from EPROLO"""
-        token = await self.get_access_token()
-        headers = self._get_headers()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/api/v1/product/detail",
-                    params={"productId": pid},
-                    headers=headers
-                )
-                data = response.json()
-                if data.get("code") == 0 or data.get("success"):
-                    return data.get("data")
-        except Exception as e:
-            logger.error(f"Error getting EPROLO product details: {e}")
-        return None
-    
-    async def get_categories(self):
-        """Get categories from EPROLO"""
-        token = await self.get_access_token()
-        headers = self._get_headers()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/api/v1/product/categories",
-                    headers=headers
-                )
-                data = response.json()
-                if data.get("code") == 0 or data.get("success"):
-                    return data.get("data", [])
-        except Exception as e:
-            logger.error(f"Error getting EPROLO categories: {e}")
-        return []
-    
     async def create_order(self, order_data: Dict[str, Any]):
-        """Create order in EPROLO"""
-        token = await self.get_access_token()
-        headers = self._get_headers()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+        """Create order in EPROLO - POST /add_order.html"""
+        if not self.api_key or not self.api_secret:
+            logger.warning("EPROLO API credentials not configured")
+            return None
         
         try:
+            auth = self._get_auth_params()
+            
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.base_url}/api/v1/order/create",
+                    f"{self.base_url}/add_order.html?timestamp={auth['timestamp']}&sign={auth['sign']}",
                     json=order_data,
-                    headers=headers
+                    headers=self._get_headers()
                 )
                 data = response.json()
                 logger.info(f"EPROLO order create response: {data}")
-                if data.get("code") == 0 or data.get("success"):
+                if data.get("code") == "0" or data.get("code") == 0:
                     return data.get("data")
+                else:
+                    logger.error(f"EPROLO order error: {data.get('msg')}")
         except Exception as e:
             logger.error(f"Error creating EPROLO order: {e}")
         return None
     
-    async def get_order_status(self, order_id: str):
-        """Get order status from EPROLO"""
-        token = await self.get_access_token()
-        headers = self._get_headers()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+    async def get_orders(self, page: int = 1, size: int = 20):
+        """Get orders from EPROLO - GET /order_list.html"""
+        if not self.api_key or not self.api_secret:
+            return {"orders": [], "total": 0}
         
         try:
+            auth = self._get_auth_params()
+            
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{self.base_url}/api/v1/order/detail",
-                    params={"orderId": order_id},
-                    headers=headers
+                    f"{self.base_url}/order_list.html?timestamp={auth['timestamp']}&sign={auth['sign']}&pageNo={page}&pageSize={size}",
+                    headers=self._get_headers()
                 )
                 data = response.json()
-                if data.get("code") == 0 or data.get("success"):
-                    return data.get("data")
+                if data.get("code") == "0" or data.get("code") == 0:
+                    orders = data.get("data", {}).get("list", []) or []
+                    total = data.get("data", {}).get("total", len(orders))
+                    return {"orders": orders, "total": total}
+        except Exception as e:
+            logger.error(f"Error getting EPROLO orders: {e}")
+        return {"orders": [], "total": 0}
+    
+    async def get_order_status(self, order_id: str):
+        """Get order status from EPROLO orders list"""
+        try:
+            result = await self.get_orders(1, 100)
+            for order in result.get("orders", []):
+                if str(order.get("order_id")) == str(order_id) or str(order.get("id")) == str(order_id):
+                    return order
         except Exception as e:
             logger.error(f"Error getting EPROLO order status: {e}")
         return None
-    
-    async def get_inventory(self, vid: str):
-        """Get inventory for a variant"""
-        token = await self.get_access_token()
-        headers = self._get_headers()
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/api/v1/product/inventory",
-                    params={"variantId": vid},
-                    headers=headers
-                )
-                data = response.json()
-                if data.get("code") == 0 or data.get("success"):
-                    return data.get("data", {}).get("quantity", 0)
-        except Exception as e:
-            logger.error(f"Error getting EPROLO inventory: {e}")
-        return 0
 
 eprolo_service = EproloService()
 
@@ -874,39 +786,45 @@ async def create_eprolo_order(order_id: str):
     
     shipping = order.get("shipping_address", {})
     
-    # Build EPROLO order products
-    products = []
+    # Build EPROLO order items
+    order_items = []
     for item in order.get("items", []):
         product = await db.products.find_one({"id": item["product_id"]}, {"_id": 0})
         if product and product.get("eprolo_pid"):
-            variant_id = item.get("variant_id") or (product.get("variants", [{}])[0].get("vid") if product.get("variants") else None)
-            products.append({
-                "productId": product.get("eprolo_pid"),
-                "variantId": variant_id,
-                "quantity": item["quantity"],
-                "sku": product.get("sku", "")
-            })
+            variant_id = item.get("variant_id") or product.get("eprolo_variant_id") or ""
+            if variant_id:
+                order_items.append({
+                    "variantsid": str(variant_id),
+                    "quantity": item["quantity"]
+                })
     
-    if not products:
+    if not order_items:
         logger.warning(f"No EPROLO products found for order {order_id}")
         return
     
+    # Parse name into parts
+    name_parts = shipping.get("name", "Customer").split()
+    first_name = name_parts[0] if name_parts else "Customer"
+    
+    # EPROLO order format from documentation
     eprolo_order_data = {
-        "orderNumber": order["order_number"],
-        "shippingAddress": {
-            "firstName": shipping.get("name", "").split()[0] if shipping.get("name") else "",
-            "lastName": " ".join(shipping.get("name", "").split()[1:]) if shipping.get("name") else "",
-            "address1": shipping.get("address", ""),
-            "address2": shipping.get("address2", ""),
-            "city": shipping.get("city", ""),
-            "province": shipping.get("state", ""),
-            "country": shipping.get("country", "United States"),
-            "countryCode": shipping.get("country_code", "US"),
-            "zip": shipping.get("zip_code", ""),
-            "phone": shipping.get("phone", ""),
-            "email": shipping.get("email", "")
-        },
-        "products": products
+        "note": f"Order from NOVAXS - {order['order_number']}",
+        "shipping_country_code": shipping.get("country_code", "US"),
+        "shipping_name": shipping.get("name", first_name),
+        "shipping_phone": shipping.get("phone", ""),
+        "shipping_company": "",
+        "shipping_country": shipping.get("country", "United States"),
+        "shipping_address": shipping.get("address", ""),
+        "shipping_province": shipping.get("state", ""),
+        "shipping_province_code": shipping.get("state", "")[:2].upper() if shipping.get("state") else "",
+        "shipping_address2": shipping.get("address2", ""),
+        "shipping_city": shipping.get("city", ""),
+        "shipping_zip": shipping.get("zip_code", ""),
+        "shipping_taxNumber": "",
+        "order_id": order_id,
+        "order_number": order["order_number"],
+        "logistics_id": 10,
+        "orderItemlist": order_items
     }
     
     eprolo_result = await eprolo_service.create_order(eprolo_order_data)
@@ -915,12 +833,12 @@ async def create_eprolo_order(order_id: str):
         await db.orders.update_one(
             {"id": order_id},
             {"$set": {
-                "eprolo_order_id": eprolo_result.get("orderId") or eprolo_result.get("id"),
+                "eprolo_order_id": eprolo_result.get("order_id") or eprolo_result.get("id") or str(eprolo_result),
                 "status": "processing",
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
-        logger.info(f"EPROLO order created: {eprolo_result.get('orderId') or eprolo_result.get('id')} for order {order_id}")
+        logger.info(f"EPROLO order created for order {order_id}")
 
 @api_router.get("/orders")
 async def get_orders(user=Depends(get_current_user), page: int = 1, limit: int = 10):
@@ -985,15 +903,16 @@ async def track_order(order_number: str):
 # ============ EPROLO Integration Routes ============
 
 @api_router.get("/eprolo/products")
-async def get_eprolo_products(keyword: str = "", category_id: str = "", page: int = 1, size: int = 20):
+async def get_eprolo_products(keyword: str = "", page: int = 1, size: int = 20):
     """Get products directly from EPROLO"""
-    result = await eprolo_service.get_products(keyword, category_id, page, size)
+    result = await eprolo_service.get_products(keyword, page, size)
     return result
 
-@api_router.get("/eprolo/categories")
-async def get_eprolo_categories():
-    """Get categories from EPROLO"""
-    return await eprolo_service.get_categories()
+@api_router.get("/eprolo/orders")
+async def get_eprolo_orders(page: int = 1, size: int = 20):
+    """Get orders from EPROLO"""
+    result = await eprolo_service.get_orders(page, size)
+    return result
 
 @api_router.post("/eprolo/sync")
 async def sync_eprolo_products(background_tasks: BackgroundTasks, keyword: str = "", limit: int = 50):
@@ -1016,7 +935,7 @@ async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
     keywords = ["women dress", "men shirt", "pet toy", "headphones", "skincare", "camping"] if not keyword else [keyword]
     
     for kw in keywords:
-        result = await eprolo_service.get_products(kw, "", 1, limit // len(keywords))
+        result = await eprolo_service.get_products(kw, 1, limit // len(keywords))
         
         for eprolo_product in result.get("products", []):
             if isinstance(eprolo_product, dict):
