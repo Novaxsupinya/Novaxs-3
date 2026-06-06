@@ -229,7 +229,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0})
         return user
-    except:
+    except jwt.PyJWTError:
         return None
 
 def generate_order_number():
@@ -1135,7 +1135,7 @@ async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(sec
         if not payload.get("is_admin"):
             raise HTTPException(status_code=403, detail="Admin access required")
         return payload
-    except:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid admin token")
 
 @api_router.post("/admin/login")
@@ -1265,11 +1265,11 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
 
-@api_router.post("/admin/sync-cj-products")
-async def admin_sync_cj_products(keyword: str = "", limit: int = 50, admin=Depends(get_admin_user), background_tasks: BackgroundTasks = None):
-    """Sync products from CJ Dropshipping"""
+@api_router.post("/admin/sync-eprolo-products")
+async def admin_sync_eprolo_products(keyword: str = "", limit: int = 50, admin=Depends(get_admin_user), background_tasks: BackgroundTasks = None):
+    """Sync products from EPROLO"""
     if background_tasks:
-        background_tasks.add_task(sync_products_from_cj, keyword, limit)
+        background_tasks.add_task(sync_products_from_eprolo, keyword, limit)
     return {"message": "Product sync started", "keyword": keyword, "limit": limit}
 
 @api_router.post("/admin/send-test-email")
