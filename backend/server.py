@@ -952,14 +952,27 @@ async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
                         break
                 
                 product_id = str(uuid.uuid4())
+                
+                # Extract all available images
+                images = []
+                main_img = prod.get("image") or prod.get("bigImage") or prod.get("mainImage", "")
+                if main_img:
+                    images.append(main_img)
+                for img_field in ["images", "imageList", "productImages", "gallery", "imgList"]:
+                    img_list = prod.get(img_field, [])
+                    if isinstance(img_list, list):
+                        images.extend([img for img in img_list if img and img not in images])
+                if not images:
+                    images = [""]
+                
                 product = {
                     "id": product_id,
                     "eprolo_pid": prod.get("id") or prod.get("productId"),
                     "name": prod.get("name") or prod.get("nameEn", "Product"),
                     "description": prod.get("description", "High quality product from trusted suppliers."),
                     "category": category,
-                    "image": prod.get("image") or prod.get("bigImage", ""),
-                    "images": [prod.get("image") or prod.get("bigImage", "")],
+                    "image": images[0],
+                    "images": images,
                     "price": float(prod.get("price", 0) or prod.get("sellPrice", 0) or 9.99),
                     "compare_price": float(prod.get("comparePrice", 0)) if prod.get("comparePrice") else None,
                     "variants": [],
