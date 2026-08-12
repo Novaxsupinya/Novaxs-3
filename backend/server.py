@@ -27,6 +27,9 @@ db = client[os.environ['DB_NAME']]
 
 # Create the main app
 app = FastAPI(title="NOVAXS E-commerce API")
+@app.get("/")
+async def root():
+    return {"message": "NOVAXS E-commerce API", "status": "running"}
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
