@@ -986,7 +986,7 @@ const ProductReviews = ({ productId }) => {
   const [newReview, setNewReview] = useState({ rating: 5, title: "", comment: "" });
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchReviews = useCallback(async () =\> {
+  const fetchReviews = useCallback(async () => {
   try {
     const res = await axios.get(`${API}/products/${productId}/reviews`);
     setReviews(res.data.reviews);
