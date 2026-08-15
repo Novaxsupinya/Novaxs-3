@@ -986,16 +986,16 @@ const ProductReviews = ({ productId }) => {
   const [newReview, setNewReview] = useState({ rating: 5, title: "", comment: "" });
   const [submitting, setSubmitting] = useState(false);
 
+  const fetchReviews = async () => {
   useEffect(() => {
     fetchReviews();
   }, [productId]);
 
-  const fetchReviews = async () => {
     try {
       const res = await axios.get(`${API}/products/${productId}/reviews`);
       setReviews(res.data.reviews);
       setDistribution(res.data.distribution);
-    } catch {
+    } catch (error) {
       // Reviews fetch failed
     } finally {
       setLoading(false);
