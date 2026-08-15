@@ -1039,11 +1039,6 @@ const ProductReviews = ({ productId }) => {
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : 0;
 
-  const avgRating =
-    reviews && reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : 0;
-
   return (
     <div className="mt-16 border-t pt-12" data-testid="product-reviews">
       <div className="flex items-center justify-between mb-8">
