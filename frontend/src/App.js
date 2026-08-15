@@ -998,42 +998,46 @@ const ProductReviews = ({ productId }) => {
   }
 }, [productId]);
 
-useEffect(() => {
-  fetchReviews();
-}, [fetchReviews]);
+  const [reviews, setReviews] = useState([]);
+  const [distribution, setDistribution] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newReview, setNewReview] = useState({ rating: 5, title: '', comment: '' });
 
-  useEffect(() => {
-    fetchReviews();
-  }, [productId]);
-
+  const fetchReviews = useCallback(async () => {
+    if (!productId) return;
     try {
       const res = await axios.get(`${API}/products/${productId}/reviews`);
-      setReviews(res.data.reviews);
-      setDistribution(res.data.distribution);
+      setReviews(res.data?.reviews || []);
+      setDistribution(res.data?.distribution || {});
     } catch (error) {
       // Reviews fetch failed
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const submitReview = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(`${API}/products/${productId}/reviews`, {
-        product_id: productId,
-        ...newReview
-      }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      toast.success("Review submitted!");
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API}/products/${productId}/reviews`,
+        { product_id: productId, ...newReview },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      toast.success('Review submitted!');
       setShowForm(false);
-      setNewReview({ rating: 5, title: "", comment: "" });
+      setNewReview({ rating: 5, title: '', comment: '' });
       fetchReviews();
     } catch (e) {
-      toast.error("Failed to submit review");
+      toast.error('Failed to submit review');
     } finally {
       setSubmitting(false);
     }
@@ -1042,16 +1046,17 @@ useEffect(() => {
   const markHelpful = async (reviewId) => {
     try {
       await axios.post(`${API}/reviews/${reviewId}/helpful`);
-      toast.success("Marked as helpful");
+      toast.success('Marked as helpful');
       fetchReviews();
     } catch {
       // Mark helpful failed
     }
   };
 
-  const avgRating = reviews.length > 0 
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : 0;
+  const avgRating =
+    reviews && reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : 0;
 
   return (
     <div className="mt-16 border-t pt-12" data-testid="product-reviews">
