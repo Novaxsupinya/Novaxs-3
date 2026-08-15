@@ -978,27 +978,15 @@ const ProductDetailPage = () => {
 
 // Product Reviews Component
 const ProductReviews = ({ productId }) => {
-  const { user } = useApp();
+
   const [reviews, setReviews] = useState([]);
   const [distribution, setDistribution] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newReview, setNewReview] = useState({ rating: 5, title: "", comment: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [newReview, setNewReview] = useState({ rating: 5, title: '', comment: '' });
 
   const fetchReviews = useCallback(async () => {
-  try {
-    const res = await axios.get(`${API}/products/${productId}/reviews`);
-    setReviews(res.data.reviews);
-    setDistribution(res.data.distribution);
-  } catch (error) {
-    // Fetch failed
-  } finally {
-    setLoading(false);
-  }
-}, [productId]);
-
-   const fetchReviews = useCallback(async () => {
     if (!productId) return;
     try {
       const res = await axios.get(`${API}/products/${productId}/reviews`);
@@ -1050,7 +1038,6 @@ const ProductReviews = ({ productId }) => {
     reviews && reviews.length > 0
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : 0;
-
 
   const avgRating =
     reviews && reviews.length > 0
