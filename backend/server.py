@@ -376,21 +376,38 @@ async def health():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 @api_router.get("/test-eprolo")
 async def test_eprolo():
-    """Temporary public endpoint to test Eprolo connection"""
+    """Temporary public endpoint to test Eprolo connection - shows raw response"""
     try:
-        result = await eprolo_service.get_products(keyword="shirt", page=1, size=5)
+        import time, hashlib, httpx
+        
+        api_key = EPROLO_API_KEY
+        api_secret = EPROLO_API_SECRET
+        timestamp = str(int(time.time()))
+        sign_str = f"{api_key}{timestamp}{api_secret}"
+        sign = hashlib.md5(sign_str.encode()).hexdigest()
+        
+        url = f"https://openapi.eprolo.com/product_list.html?timestamp={timestamp}&sign={sign}&pageNo=1&pageSize=5&keyword=shirt"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                headers={"apiKey": api_key, "Content-Type": "application/json"}
+            )
+            data = response.json()
+            
         return {
             "status": "ok",
-            "eprolo_response": result,
-            "api_key_set": bool(EPROLO_API_KEY),
-            "api_secret_set": bool(EPROLO_API_SECRET)
+            "http_status": response.status_code,
+            "raw_eprolo_response": data,
+            "timestamp_used": timestamp,
+            "sign_used": sign,
+            "api_key_set": bool(api_key),
+            "api_secret_set": bool(api_secret)
         }
     except Exception as e:
         return {
             "status": "error",
-            "message": str(e),
-            "api_key_set": bool(EPROLO_API_KEY),
-            "api_secret_set": bool(EPROLO_API_SECRET)
+            "message": str(e)
         }
 # ============ Auth Routes ============
 
