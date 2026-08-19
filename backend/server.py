@@ -374,7 +374,24 @@ async def root():
 @api_router.get("/health")
 async def health():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
-
+@api_router.get("/test-eprolo")
+async def test_eprolo():
+    """Temporary public endpoint to test Eprolo connection"""
+    try:
+        result = await eprolo_service.get_products(keyword="shirt", page=1, size=5)
+        return {
+            "status": "ok",
+            "eprolo_response": result,
+            "api_key_set": bool(EPROLO_API_KEY),
+            "api_secret_set": bool(EPROLO_API_SECRET)
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "api_key_set": bool(EPROLO_API_KEY),
+            "api_secret_set": bool(EPROLO_API_SECRET)
+        }
 # ============ Auth Routes ============
 
 @api_router.post("/auth/register", response_model=TokenResponse)
