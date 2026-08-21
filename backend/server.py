@@ -353,16 +353,17 @@ class EproloService:
         return None
 
 eprolo_service = EproloService()
-
 # ============ Stripe Service ============
-#from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+import stripe
 
-#def get_stripe_checkout(host_url: str = ""):
-    #if not STRIPE_API_KEY:
-        #logger.warning("Stripe API key not configured")
-        #return None
-   #webhook_url = f"{host_url}api/webhook/stripe" if host_url else ""
-    #return StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+stripe.api_key = STRIPE_API_KEY
+
+def get_stripe_checkout(host_url: str = ""):
+    if not STRIPE_API_KEY:
+        logger.warning("Stripe API key not configured")
+        return None
+    return True
+
 
 # ============ API Routes ============
 
