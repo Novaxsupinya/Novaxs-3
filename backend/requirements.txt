@@ -66,8 +66,6 @@ packaging==26.0
 pandas==3.0.0
 passlib==1.7.4
 pathspec==1.0.4
-paypal-checkout-serversdk==1.0.3
-paypalhttp==1.0.1
 pillow==12.1.0
 platformdirs==4.5.1
 pluggy==1.6.0
