@@ -4,22 +4,19 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useSearchPa
 import axios from "axios";
 import { Toaster, toast } from "sonner";
 import { 
-  Search, ShoppingCart, User, Menu, X, Heart, Package, LogOut, 
-  ChevronRight, Star, Minus, Plus, Trash2, CreditCard, Truck, 
-  Shield, ArrowLeft, Filter, ChevronDown, Check
+  Search, ShoppingCart, Minus, Plus, Trash2, CreditCard, ArrowLeft, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const API = BACKEND_URL + "/api";
 
 const AppContext = createContext(null);
 const useApp = () => useContext(AppContext);
@@ -27,7 +24,7 @@ const useApp = () => useContext(AppContext);
 const getCartId = () => {
   let cartId = localStorage.getItem("cartId");
   if (!cartId) {
-    cartId = `cart_\( {Date.now()}_ \){Math.random().toString(36).substr(2, 9)}`;
+    cartId = "cart_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("cartId", cartId);
   }
   return cartId;
@@ -37,15 +34,14 @@ const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState({ items: [], subtotal: 0 });
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const initializeApp = async () => {
+    const init = async () => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const res = await axios.get(`${API}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
+          const res = await axios.get(API + "/auth/me", {
+            headers: { Authorization: "Bearer " + token }
           });
           setUser(res.data);
         } catch {
@@ -53,27 +49,20 @@ const AppProvider = ({ children }) => {
         }
       }
       try {
-        const cartRes = await axios.get(`\( {API}/cart/ \){getCartId()}`);
+        const cartRes = await axios.get(API + "/cart/" + getCartId());
         setCart(cartRes.data);
       } catch {}
       try {
-        const catRes = await axios.get(`${API}/categories`);
+        const catRes = await axios.get(API + "/categories");
         setCategories(catRes.data);
       } catch {}
     };
-    initializeApp();
+    init();
   }, []);
-
-  const fetchCart = async () => {
-    try {
-      const res = await axios.get(`\( {API}/cart/ \){getCartId()}`);
-      setCart(res.data);
-    } catch {}
-  };
 
   const addToCart = async (productId, variantId = null, quantity = 1) => {
     try {
-      const res = await axios.post(`\( {API}/cart/ \){getCartId()}/items`, {
+      const res = await axios.post(API + "/cart/" + getCartId() + "/items", {
         product_id: productId,
         variant_id: variantId,
         quantity
@@ -89,7 +78,7 @@ const AppProvider = ({ children }) => {
 
   const updateCartItem = async (productId, quantity) => {
     try {
-      const res = await axios.put(`\( {API}/cart/ \){getCartId()}/items/\( {productId}?quantity= \){quantity}`);
+      const res = await axios.put(API + "/cart/" + getCartId() + "/items/" + productId + "?quantity=" + quantity);
       setCart(res.data);
     } catch (e) {
       toast.error("Failed to update cart");
@@ -98,7 +87,7 @@ const AppProvider = ({ children }) => {
 
   const removeFromCart = async (productId) => {
     try {
-      const res = await axios.delete(`\( {API}/cart/ \){getCartId()}/items/${productId}`);
+      const res = await axios.delete(API + "/cart/" + getCartId() + "/items/" + productId);
       setCart(res.data);
       toast.success("Removed from cart");
     } catch (e) {
@@ -106,44 +95,8 @@ const AppProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
-    try {
-      const res = await axios.post(`${API}/auth/login`, { email, password });
-      localStorage.setItem("token", res.data.access_token);
-      setUser(res.data.user);
-      toast.success("Welcome back!");
-      return true;
-    } catch (e) {
-      toast.error(e.response?.data?.detail || "Login failed");
-      return false;
-    }
-  };
-
-  const register = async (name, email, password) => {
-    try {
-      const res = await axios.post(`${API}/auth/register`, { name, email, password });
-      localStorage.setItem("token", res.data.access_token);
-      setUser(res.data.user);
-      toast.success("Account created!");
-      return true;
-    } catch (e) {
-      toast.error(e.response?.data?.detail || "Registration failed");
-      return false;
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    toast.success("Logged out");
-  };
-
   return (
-    <AppContext.Provider value={{
-      user, setUser, cart, setCart, categories, loading, setLoading,
-      addToCart, updateCartItem, removeFromCart, fetchCart,
-      login, register, logout
-    }}>
+    <AppContext.Provider value={{ user, cart, categories, addToCart, updateCartItem, removeFromCart }}>
       {children}
     </AppContext.Provider>
   );
@@ -158,44 +111,42 @@ const Header = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+      navigate("/products?search=" + encodeURIComponent(searchQuery));
     }
   };
 
   return (
-    <header className="sticky top-0 z-50" data-testid="header">
-      <div className="py-4" style={{ backgroundColor: '#0A0A1F' }}>
+    <header className="sticky top-0 z-50">
+      <div className="py-4" style={{ backgroundColor: "#0A0A1F" }}>
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4">
-          <Link to="/" className="flex-shrink-0" data-testid="logo">
+          <Link to="/" className="flex-shrink-0">
             <img 
               src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/g0y20dm6_image-1.jpg" 
               alt="NOVAXS" 
               className="h-12 md:h-14 object-contain"
-              style={{ filter: 'drop-shadow(0 0 10px rgba(160, 32, 240, 0.5))' }}
             />
           </Link>
 
           <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:block">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#A020F0' }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "#A020F0" }} />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 focus:outline-none"
-                style={{ backgroundColor: '#1A1A2E', borderColor: '#A020F0', color: '#E0E0FF' }}
-                data-testid="search-input"
+                style={{ backgroundColor: "#1A1A2E", borderColor: "#A020F0", color: "#E0E0FF" }}
               />
             </div>
           </form>
 
           <Sheet>
             <SheetTrigger asChild>
-              <button className="relative p-2" data-testid="cart-btn">
-                <ShoppingCart className="w-7 h-7" style={{ color: '#A020F0' }} />
+              <button className="relative p-2">
+                <ShoppingCart className="w-7 h-7" style={{ color: "#A020F0" }} />
                 {cartItemsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ backgroundColor: '#A020F0' }}>
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white" style={{ backgroundColor: "#A020F0" }}>
                     {cartItemsCount}
                   </span>
                 )}
@@ -205,22 +156,6 @@ const Header = () => {
               <CartDrawer />
             </SheetContent>
           </Sheet>
-        </div>
-
-        <div className="md:hidden px-4 mt-3">
-          <form onSubmit={handleSearch}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#A020F0' }} />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 focus:outline-none"
-                style={{ backgroundColor: '#1A1A2E', borderColor: '#A020F0', color: '#E0E0FF' }}
-              />
-            </div>
-          </form>
         </div>
       </div>
     </header>
@@ -233,7 +168,7 @@ const CartDrawer = () => {
 
   if (!cart?.items?.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center" data-testid="empty-cart">
+      <div className="flex flex-col items-center justify-center h-full text-center">
         <ShoppingCart className="w-16 h-16 text-slate-300 mb-4" />
         <h3 className="text-lg font-semibold mb-2">Your cart is empty</h3>
         <p className="text-slate-500 mb-4">Add some products to get started</p>
@@ -245,7 +180,7 @@ const CartDrawer = () => {
   }
 
   return (
-    <div className="flex flex-col h-full" data-testid="cart-drawer">
+    <div className="flex flex-col h-full">
       <SheetHeader>
         <SheetTitle>Shopping Cart ({cart.items.length})</SheetTitle>
       </SheetHeader>
@@ -304,20 +239,20 @@ const ProductCard = ({ product }) => {
     : 0;
 
   return (
-    <div className="product-card group relative bg-white rounded-xl overflow-hidden border border-slate-100">
-      <Link to={`/product/${product.id}`}>
+    <div className="bg-white rounded-xl overflow-hidden border border-slate-100">
+      <Link to={"/product/" + product.id}>
         <div className="relative aspect-square overflow-hidden bg-slate-100">
           <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
           {discount > 0 && <Badge className="absolute top-3 left-3 bg-orange-500">-{discount}%</Badge>}
         </div>
       </Link>
       <div className="p-4">
-        <Link to={`/product/${product.id}`}>
+        <Link to={"/product/" + product.id}>
           <h3 className="font-semibold text-sm line-clamp-2 h-10 hover:text-orange-500">{product.name}</h3>
         </Link>
         <div className="flex items-center gap-1 mt-2">
           {[...Array(5)].map((_, i) => (
-            <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(product.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+            <Star key={i} className={"w-3.5 h-3.5 " + (i < Math.floor(product.rating || 0) ? "fill-amber-400 text-amber-400" : "text-slate-200")} />
           ))}
           <span className="text-xs text-slate-500 ml-1">({product.reviews_count || 0})</span>
         </div>
@@ -339,14 +274,13 @@ const ProductCard = ({ product }) => {
 };
 
 const HomePage = () => {
-  const { categories } = useApp();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const res = await axios.get(`${API}/products/featured?limit=8`);
+        const res = await axios.get(API + "/products/featured?limit=8");
         setFeaturedProducts(res.data);
       } catch {}
       finally { setLoading(false); }
@@ -358,7 +292,7 @@ const HomePage = () => {
     <div>
       <section className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-8 overflow-hidden md:h-[500px] aspect-[4/3] md:aspect-auto rounded-[40px]" style={{ background: 'linear-gradient(135deg, #0A0A1F 0%, #0D0D24 50%, #0A0A1F 100%)' }}>
+          <div className="md:col-span-8 overflow-hidden md:h-[500px] aspect-[4/3] md:aspect-auto rounded-[40px]" style={{ background: "linear-gradient(135deg, #0A0A1F 0%, #0D0D24 50%, #0A0A1F 100%)" }}>
             <img 
               src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
               alt="NOVAXS"
@@ -393,7 +327,7 @@ const HomePage = () => {
         </div>
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-80 rounded-xl" />)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-80 bg-slate-100 rounded-xl animate-pulse" />)}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -416,10 +350,10 @@ const ProductsPage = () => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (category) params.append("category", category);
-        if (search) params.append("search", search);
-        const res = await axios.get(`\( {API}/products? \){params}`);
+        let url = API + "/products?";
+        if (category) url += "category=" + category + "&";
+        if (search) url += "search=" + encodeURIComponent(search);
+        const res = await axios.get(url);
         setProducts(res.data.products || res.data || []);
       } catch {
         setProducts([]);
@@ -433,11 +367,11 @@ const ProductsPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">
-        {category ? category.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase()) : search ? `Search: ${search}` : "All Products"}
+        {category ? category.replace(/-/g, " ") : search ? "Search: " + search : "All Products"}
       </h1>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => <div key={i} className="skeleton h-80 rounded-xl" />)}
+          {[...Array(8)].map((_, i) => <div key={i} className="h-80 bg-slate-100 rounded-xl animate-pulse" />)}
         </div>
       ) : products.length === 0 ? (
         <p className="text-center text-slate-500 py-16">No products found</p>
@@ -459,7 +393,7 @@ const ProductDetailPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`\( {API}/products/ \){id}`);
+        const res = await axios.get(API + "/products/" + id);
         setProduct(res.data);
       } catch {}
       finally { setLoading(false); }
@@ -467,7 +401,7 @@ const ProductDetailPage = () => {
     fetchProduct();
   }, [id]);
 
-  if (loading) return <div className="max-w-7xl mx-auto px-4 py-16"><div className="skeleton h-96 rounded-2xl" /></div>;
+  if (loading) return <div className="max-w-7xl mx-auto px-4 py-16"><div className="h-96 bg-slate-100 rounded-2xl animate-pulse" /></div>;
   if (!product) return <div className="text-center py-16">Product not found</div>;
 
   return (
@@ -517,16 +451,16 @@ const CheckoutPage = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(`${API}/orders`, {
+      const res = await axios.post(API + "/orders", {
         shipping_address: formData,
         cart_id: localStorage.getItem("cartId")
       }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: token ? { Authorization: "Bearer " + token } : {}
       });
 
-      const { order } = res.data;
+      const order = res.data.order;
       
-      const stripeRes = await axios.post(`${API}/checkout/stripe`, {
+      const stripeRes = await axios.post(API + "/checkout/stripe", {
         order_id: order.id,
         origin_url: window.location.origin + "/"
       });
@@ -568,3 +502,129 @@ const CheckoutPage = () => {
                 <div>
                   <Label>Phone</Label>
                   <Input value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} required />
+                </div>
+                <div>
+                  <Label>Country</Label>
+                  <Select value={formData.country_code} onValueChange={(v) => setFormData({...formData, country_code: v, country: v === "US" ? "United States" : v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">United States</SelectItem>
+                      <SelectItem value="CA">Canada</SelectItem>
+                      <SelectItem value="GB">United Kingdom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label>Address</Label>
+                  <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} required />
+                </div>
+                <div>
+                  <Label>City</Label>
+                  <Input value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} required />
+                </div>
+                <div>
+                  <Label>State</Label>
+                  <Input value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} required />
+                </div>
+                <div>
+                  <Label>ZIP Code</Label>
+                  <Input value={formData.zip_code} onChange={(e) => setFormData({...formData, zip_code: e.target.value})} required />
+                </div>
+              </div>
+
+              <Separator className="my-8" />
+              <h2 className="text-xl font-bold mb-6">Payment</h2>
+              <div className="bg-slate-50 rounded-xl p-6 flex items-center gap-4">
+                <CreditCard className="w-12 h-12 text-slate-600" />
+                <div>
+                  <p className="font-medium">Pay with Stripe</p>
+                  <p className="text-sm text-slate-500">Secure card payment</p>
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full mt-8 h-14 bg-orange-500 hover:bg-orange-600 text-lg font-semibold" disabled={loading}>
+                {loading ? "Processing..." : "Place Order • $" + total.toFixed(2)}
+              </Button>
+            </form>
+          </div>
+
+          <div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-24">
+              <h2 className="text-xl font-bold mb-6">Order Summary</h2>
+              <div className="space-y-4 mb-6">
+                {cart?.items?.map((item) => (
+                  <div key={item.product_id} className="flex gap-3">
+                    <img src={item.product?.image} alt={item.product?.name} className="w-16 h-16 rounded-lg object-cover" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium line-clamp-2">{item.product?.name}</p>
+                      <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="font-medium">${((item.product?.price || 0) * item.quantity).toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+              <Separator className="my-4" />
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-slate-600">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Shipping</span><span>{shipping === 0 ? "FREE" : "$" + shipping.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Tax</span><span>${tax.toFixed(2)}</span></div>
+              </div>
+              <Separator className="my-4" />
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span className="text-orange-500">${total.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Footer = () => (
+  <footer className="bg-slate-900 text-white mt-16">
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div>
+          <h3 className="text-xl font-bold mb-4"><span className="text-orange-500">Nova</span>xs</h3>
+          <p className="text-slate-400 text-sm">Your one-stop shop for amazing deals.</p>
+        </div>
+        <div>
+          <h4 className="font-semibold mb-4">Shop</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link to="/products?category=womens-fashion" className="hover:text-orange-500">Women's Fashion</Link></li>
+            <li><Link to="/products?category=mens-fashion" className="hover:text-orange-500">Men's Fashion</Link></li>
+            <li><Link to="/products?category=electronics" className="hover:text-orange-500">Electronics</Link></li>
+          </ul>
+        </div>
+      </div>
+      <Separator className="my-8 bg-slate-700" />
+      <p className="text-sm text-slate-400 text-center">© 2026 Novaxs. All rights reserved.</p>
+    </div>
+  </footer>
+);
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppProvider>
+        <div className="min-h-screen flex flex-col">
+          <Toaster position="top-center" richColors />
+          <Header />
+          <main className="flex-1">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+      </AppProvider>
+    </BrowserRouter>
+  );
+}
+
+export default App;
