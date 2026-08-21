@@ -708,58 +708,84 @@ class StripeCheckoutRequest(BaseModel):
     order_id: str
     origin_url: str
 
+    
 @api_router.post("/checkout/stripe")
 async def create_stripe_checkout(req: StripeCheckoutRequest):
     """Create Stripe checkout session for an order"""
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
     order = await db.orders.find_one({"id": req.order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     if order.get("payment_status") == "paid":
         raise HTTPException(status_code=400, detail="Order already paid")
-    
-    stripe = get_stripe_checkout(req.origin_url)
-    if not stripe:
-        raise HTTPException(status_code=500, detail="Stripe not configured")
-    
-    success_url = f"{req.origin_url}order-confirmation/{order['id']}?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{req.origin_url}checkout"
-    
-    checkout_req = CheckoutSessionRequest(
-        amount=float(order["total"]),
-        currency="usd",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={"order_id": order["id"], "order_number": order["order_number"]}
-    )
-    
-    session: CheckoutSessionResponse = await stripe.create_checkout_session(checkout_req)
-    
-    # Store session ID in order
-    await db.orders.update_one(
-        {"id": order["id"]},
-        {"$set": {"stripe_session_id": session.session_id, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    # Create payment transaction record
-    await db.payment_transactions.insert_one({
-        "id": str(uuid.uuid4()),
-        "order_id": order["id"],
-        "session_id": session.session_id,
-        "amount": order["total"],
-        "currency": "usd",
-        "payment_status": "pending",
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    
-    return {"checkout_url": session.url, "session_id": session.session_id}
 
-@api_router.get("/checkout/status/{session_id}")
-async def get_checkout_status(session_id: str, origin_url: str = ""):
-    """Get Stripe checkout session status"""
-    stripe = get_stripe_checkout(origin_url)
-    if not stripe:
-        raise HTTPException(status_code=500, detail="Stripe not configured")
+    try:
+        line_items = []
+        for item in order.get("items", []):
+            line_items.append({
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": item.get("name", "Product"),
+                        "images": [item["image"]] if item.get("image") else [],
+                    },
+                    "unit_amount": int(float(item.get("price", 0)) * 100),
+                },
+                "quantity": item.get("quantity", 1),
+            })
+
+        shipping = float(order.get("shipping_cost", 0) or 0)
+        tax = float(order.get("tax", 0) or 0)
+
+        if shipping > 0:
+            line_items.append({
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": "Shipping"},
+                    "unit_amount": int(shipping * 100),
+                },
+                "quantity": 1,
+            })
+
+        if tax > 0:
+            line_items.append({
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": "Tax"},
+                    "unit_amount": int(tax * 100),
+                },
+                "quantity": 1,
+            })
+
+        success_url = req.origin_url + "order-confirmation/" + order["id"] + "?session_id={CHECKOUT_SESSION_ID}"
+        cancel_url = req.origin_url + "checkout"
+
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=line_items,
+            mode="payment",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "order_id": order["id"],
+                "order_number": order.get("order_number", "")
+            },
+        )
+
+        await db.orders.update_one(
+            {"id": order["id"]},
+            {"$set": {"stripe_session_id": session.id}}
+        )
+
+        return {"checkout_url": session.url, "session_id": session.id}
+
+    except Exception as e:
+        logger.error(f"Stripe error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
     
     status: CheckoutStatusResponse = await stripe.get_checkout_status(session_id)
     return status
