@@ -260,7 +260,7 @@ class EproloService:
         sign = self._generate_signature(timestamp)
         return {"timestamp": timestamp, "sign": sign}
     
-   def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> Dict[str, str]:
         """Get headers with apiKey"""
         return {
             "apiKey": self.api_key,
