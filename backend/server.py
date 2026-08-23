@@ -266,7 +266,6 @@ class EproloService:
             "apiKey": self.api_key,
             "Content-Type": "application/json"
         }
-    
     async def get_products(self, keyword: str = "", page: int = 1, size: int = 20):
         """Get products from EPROLO - GET /product_list.html"""
         if not self.api_key or not self.api_secret:
@@ -293,6 +292,7 @@ class EproloService:
         except Exception as e:
             logger.error(f"Error getting EPROLO products: {e}")
         return {"products": [], "total": 0}
+
     
     async def create_order(self, order_data: Dict[str, Any]):
         """Create order in EPROLO - POST /add_order.html"""
