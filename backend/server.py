@@ -260,13 +260,14 @@ class EproloService:
         sign = self._generate_signature(timestamp)
         return {"timestamp": timestamp, "sign": sign}
     
-    def _get_headers(self) -> Dict[str, str]:
+   def _get_headers(self) -> Dict[str, str]:
         """Get headers with apiKey"""
         return {
             "apiKey": self.api_key,
             "Content-Type": "application/json"
         }
-   async def get_products(self, keyword: str = "", page: int = 1, size: int = 20):
+    
+    async def get_products(self, keyword: str = "", page: int = 1, size: int = 20):
         """Get products from EPROLO - uses correct My Products endpoint"""
         if not self.api_key or not self.api_secret:
             logger.warning("EPROLO API credentials not configured")
@@ -302,6 +303,8 @@ class EproloService:
             logger.error(f"Error getting EPROLO products: {e}")
         
         return {"products": [], "total": 0}
+        
+ 
     
     async def create_order(self, order_data: Dict[str, Any]):
         """Create order in EPROLO - POST /add_order.html"""
