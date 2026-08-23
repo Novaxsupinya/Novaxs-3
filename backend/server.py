@@ -266,33 +266,42 @@ class EproloService:
             "apiKey": self.api_key,
             "Content-Type": "application/json"
         }
-    async def get_products(self, keyword: str = "", page: int = 1, size: int = 20):
-        """Get products from EPROLO - GET /product_list.html"""
+   async def get_products(self, keyword: str = "", page: int = 1, size: int = 20):
+        """Get products from EPROLO - uses correct My Products endpoint"""
         if not self.api_key or not self.api_secret:
             logger.warning("EPROLO API credentials not configured")
             return {"products": [], "total": 0}
         
         try:
             auth = self._get_auth_params()
-            params = f"timestamp={auth['timestamp']}&sign={auth['sign']}&pageNo={page}&pageSize={size}"
-            if keyword:
-                params += f"&keyword={keyword}"
             
-            async with httpx.AsyncClient() as client:
+            # Correct parameters for My Products (status=1 = imported)
+            params = (
+                f"timestamp={auth['timestamp']}"
+                f"&sign={auth['sign']}"
+                f"&page_index={page - 1}"
+                f"&page_size={size}"
+                f"&status=1"
+            )
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(
                     f"{self.base_url}/product_list.html?{params}",
                     headers=self._get_headers()
                 )
                 data = response.json()
-                logger.info(f"EPROLO products response: {data.get('code')}")
+                logger.info(f"EPROLO products response: {data.get('code')} - {data.get('msg')}")
+                
                 if data.get("code") == "0" or data.get("code") == 0:
-                    products = data.get("data", {}).get("list", []) or []
-                    total = data.get("data", {}).get("total", len(products))
-                    return {"products": products, "total": total}
+                    products = data.get("data", []) or []
+                    return {"products": products, "total": len(products)}
+                else:
+                    logger.warning(f"EPROLO returned: {data}")
+                    
         except Exception as e:
             logger.error(f"Error getting EPROLO products: {e}")
+        
         return {"products": [], "total": 0}
-
     
     async def create_order(self, order_data: Dict[str, Any]):
         """Create order in EPROLO - POST /add_order.html"""
