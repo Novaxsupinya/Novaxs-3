@@ -287,7 +287,7 @@ class EproloService:
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(
-                    f"{self.base_url}/product_list.html?{params}",
+                    f"{self.base_url}/eprolo_product_list.html?{params}",
                     headers=self._get_headers()
                 )
                 data = response.json()
