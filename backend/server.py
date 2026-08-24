@@ -399,8 +399,7 @@ async def test_eprolo():
         sign_str = f"{api_key}{timestamp}{api_secret}"
         sign = hashlib.md5(sign_str.encode()).hexdigest()
         
-        url = f"https://openapi.eprolo.com/product_list.html?timestamp={timestamp}&sign={sign}&pageNo=1&pageSize=5&keyword=shirt"
-        
+       url = f"https://openapi.eprolo.com/eprolo_product_list.html?timestamp={timestamp}&sign={sign}&page_index=0&page_size=5&status=1"
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
