@@ -42,47 +42,50 @@ const HomePage = () => {
 
   return (
     <div data-testid="home-page">
-      {/* Hero Section - Bento Grid */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          {/* Main Hero - NOVAXS Logo */}
-          <div
-            className="md:col-span-8 overflow-hidden md:h-[500px] aspect-[4/3] md:aspect-auto"
-            style={{
-              background:
-                "linear-gradient(135deg, #0A0A1F 0%, #0D0D24 50%, #0A0A1F 100%)",
-              borderRadius: "40px"
-            }}
-          >
-            <img
-              src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
-              alt="NOVAXS - The future of e-commerce"
-              className="w-full h-full object-contain"
-            />
-          </div>
-
-        {/* Secondary Cards - Show top categories */}
-<div className="md:col-span-4 grid grid-cols-2 gap-4">
-  {categories.slice(0, 4).map((cat) => (
-    <Link
-      key={cat.id}
-      to={`/products?category=${cat.slug}`}
-      className="relative rounded-2xl overflow-hidden group min-h-[180px] md:min-h-[240px]"
+    {/* Hero Section - Bento Grid */}
+<section className="max-w-7xl mx-auto px-4 py-8">
+  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+    {/* Main Hero - NOVAXS Logo */}
+    <div
+      className="md:col-span-8 overflow-hidden md:h-[500px] aspect-[4/3] md:aspect-auto"
+      style={{
+        background:
+          "linear-gradient(135deg, #0A0A1F 0%, #0D0D24 50%, #0A0A1F 100%)",
+        borderRadius: "40px"
+      }}
     >
       <img
-        src={cat.image || "https://via.placeholder.com/400"}
-        alt={cat.name}
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
+        alt="NOVAXS - The future of e-commerce"
+        className="w-full h-full object-contain"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-      <div className="absolute bottom-3 left-3 text-white">
-        <h3 className="text-sm md:text-base font-bold leading-tight">{cat.name}</h3>
-        <p className="text-white/80 text-xs">Explore →</p>
-      </div>
-    </Link>
-  ))}
-</div>
+    </div>
 
+    {/* Secondary Cards - Show top categories */}
+    <div className="md:col-span-4 grid grid-cols-2 gap-4">
+      {categories.slice(0, 4).map((cat) => (
+        <Link
+          key={cat.id}
+          to={`/products?category=${cat.slug}`}
+          className="relative rounded-2xl overflow-hidden group min-h-[180px] md:min-h-[240px]"
+        >
+          <img
+            src={cat.image || "https://via.placeholder.com/400"}
+            alt={cat.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="absolute bottom-3 left-3 text-white">
+            <h3 className="text-sm md:text-base font-bold leading-tight">
+              {cat.name}
+            </h3>
+            <p className="text-white/80 text-xs">Explore →</p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </div>
+</section> 
       {/* Trust Badges */}
       <section className="bg-slate-50 py-8 border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-4">
