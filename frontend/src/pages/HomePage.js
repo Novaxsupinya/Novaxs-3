@@ -61,41 +61,27 @@ const HomePage = () => {
             />
           </div>
 
-          {/* Secondary Cards */}
-          <div className="md:col-span-4 flex flex-col gap-4">
-            <Link
-              to="/products?category=mens-fashion"
-              className="flex-1 relative rounded-2xl overflow-hidden group min-h-[240px]"
-            >
-              <img
-                src={heroImages["mens-fashion"]}
-                alt="Men's Fashion"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <h3 className="text-xl font-bold">Men's Fashion</h3>
-                <p className="text-white/80 text-sm">Explore →</p>
-              </div>
-            </Link>
-            <Link
-              to="/products?category=electronics"
-              className="flex-1 relative rounded-2xl overflow-hidden group min-h-[240px]"
-            >
-              <img
-                src={heroImages["electronics"]}
-                alt="Electronics"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <h3 className="text-xl font-bold">Electronics</h3>
-                <p className="text-white/80 text-sm">Explore →</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
+        {/* Secondary Cards - Show top categories */}
+<div className="md:col-span-4 grid grid-cols-2 gap-4">
+  {categories.slice(0, 4).map((cat) => (
+    <Link
+      key={cat.id}
+      to={`/products?category=${cat.slug}`}
+      className="relative rounded-2xl overflow-hidden group min-h-[180px] md:min-h-[240px]"
+    >
+      <img
+        src={cat.image || "https://via.placeholder.com/400"}
+        alt={cat.name}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+      <div className="absolute bottom-3 left-3 text-white">
+        <h3 className="text-sm md:text-base font-bold leading-tight">{cat.name}</h3>
+        <p className="text-white/80 text-xs">Explore →</p>
+      </div>
+    </Link>
+  ))}
+</div>
 
       {/* Trust Badges */}
       <section className="bg-slate-50 py-8 border-y border-slate-100">
