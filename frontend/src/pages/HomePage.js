@@ -32,7 +32,7 @@ const HomePage = () => {
   }, [API]);
 
   return (
-    <div data-testid="home-page" className="bg-white">
+    <div data-testid="home-page" className="bg-white" data-version="v2">
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 pt-6 pb-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
