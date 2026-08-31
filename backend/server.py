@@ -1062,7 +1062,7 @@ async def sync_eprolo_products(background_tasks: BackgroundTasks, keyword: str =
     return {"message": "Product sync started", "keyword": keyword, "limit": limit}
 
 async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
-    """Background task to sync EPROLO products"""
+    """Background task to sync EPROLO products - fixed field mapping"""
     categories_map = {
         "women": "womens-fashion",
         "men": "mens-fashion", 
@@ -1070,67 +1070,81 @@ async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
         "electronic": "electronics",
         "beauty": "health-beauty",
         "outdoor": "outdoor-sports",
-        "sport": "outdoor-sports"
+        "sport": "outdoor-sports",
+        "tapestry": "home-decor",
+        "curtain": "home-decor"
     }
     
-    keywords = ["women dress", "men shirt", "pet toy", "headphones", "skincare", "camping"] if not keyword else [keyword]
+    # Get products from My Products (status=1)
+    result = await eprolo_service.get_products(keyword or "", 1, limit)
     
-    for kw in keywords:
-        result = await eprolo_service.get_products(kw, 1, limit // len(keywords))
+    for prod in result.get("products", []):
+        if not isinstance(prod, dict):
+            continue
         
-        for eprolo_product in result.get("products", []):
-            if isinstance(eprolo_product, dict):
-                product_list = eprolo_product.get("productList", []) if eprolo_product.get("productList") else [eprolo_product]
-            else:
-                product_list = [eprolo_product]
-            
-            for prod in product_list:
-                category = "electronics"
-                for key, cat in categories_map.items():
-                    prod_name = prod.get("name", "") or prod.get("nameEn", "") or ""
-                    if key in kw.lower() or key in prod_name.lower():
-                        category = cat
-                        break
-                
-                product_id = str(uuid.uuid4())
-                
-                # Extract all available images
-                images = []
-                main_img = prod.get("image") or prod.get("bigImage") or prod.get("mainImage", "")
-                if main_img:
-                    images.append(main_img)
-                for img_field in ["images", "imageList", "productImages", "gallery", "imgList"]:
-                    img_list = prod.get(img_field, [])
-                    if isinstance(img_list, list):
-                        images.extend([img for img in img_list if img and img not in images])
-                if not images:
-                    images = [""]
-                
-                product = {
-                    "id": product_id,
-                    "eprolo_pid": prod.get("id") or prod.get("productId"),
-                    "name": prod.get("name") or prod.get("nameEn", "Product"),
-                    "description": prod.get("description", "High quality product from trusted suppliers."),
-                    "category": category,
-                    "image": images[0],
-                    "images": images,
-                    "price": float(prod.get("price", 0) or prod.get("sellPrice", 0) or 9.99),
-                    "compare_price": float(prod.get("comparePrice", 0)) if prod.get("comparePrice") else None,
-                    "variants": [],
-                    "inventory": prod.get("inventory", 100) or 100,
-                    "rating": 4.5,
-                    "reviews_count": prod.get("soldCount", 0) or 0,
-                    "is_active": True,
-                    "tags": [kw.lower()],
-                    "created_at": datetime.now(timezone.utc).isoformat()
-                }
-                
-                existing = await db.products.find_one({"eprolo_pid": prod.get("id") or prod.get("productId")})
-                if not existing:
-                    await db.products.insert_one(product)
+        # Real Eprolo field names
+        title = prod.get("title") or prod.get("name") or "Product"
+        eprolo_id = str(prod.get("id") or prod.get("product_id") or "")
+        
+        # Images
+        images = []
+        if prod.get("imagefirst"):
+            images.append(prod["imagefirst"])
+        for img in prod.get("imagelist") or []:
+            src = img.get("src") if isinstance(img, dict) else img
+            if src and src not in images:
+                images.append(src)
+        if not images:
+            images = [""]
+        
+        # Price from first variant cost (add markup)
+        price = 9.99
+        variants_data = prod.get("variantlist") or []
+        if variants_data:
+            cost = float(variants_data[0].get("cost") or 0)
+            if cost > 0:
+                price = round(cost * 1.8, 2)  # 80% markup
+        
+        # Category
+        category = "electronics"
+        title_lower = title.lower()
+        for key, cat in categories_map.items():
+            if key in title_lower:
+                category = cat
+                break
+        
+        # Description
+        description = prod.get("body_html") or "High quality product from trusted suppliers."
+        # Strip basic HTML tags for cleaner text
+        import re
+        description = re.sub(r'<[^>]+>', ' ', description).strip()[:500] or "High quality product from trusted suppliers."
+        
+        product = {
+            "id": str(uuid.uuid4()),
+            "eprolo_pid": eprolo_id,
+            "name": title,
+            "description": description,
+            "category": category,
+            "image": images[0],
+            "images": images,
+            "price": price,
+            "compare_price": round(price * 1.4, 2) if price > 10 else None,
+            "variants": [],
+            "inventory": 100,
+            "rating": 4.5,
+            "reviews_count": 0,
+            "is_active": True,
+            "tags": [keyword.lower()] if keyword else [],
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Only insert if not already exists
+        existing = await db.products.find_one({"eprolo_pid": eprolo_id})
+        if not existing and eprolo_id:
+            await db.products.insert_one(product)
+            logger.info(f"Synced product: {title}")
     
-    logger.info(f"EPROLO product sync completed for keywords: {keywords}")
-
+    logger.info(f"EPROLO product sync completed. Processed {len(result.get('products', []))} products")
 # ============ Seed Demo Products ============
 
 async def seed_demo_products():
