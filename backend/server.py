@@ -39,7 +39,7 @@ security = HTTPBearer(auto_error=False)
 JWT_SECRET = os.environ.get('JWT_SECRET', 'handsfree-ecommerce-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'novaxs6969@gmail.com')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'NovaxsAdmin2024!')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'NovaxsAdmin2026?')
 
 # EPROLO Configuration
 EPROLO_API_BASE = "https://openapi.eprolo.com"
