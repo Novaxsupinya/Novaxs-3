@@ -422,6 +422,71 @@ async def test_eprolo():
             "status": "error",
             "message": str(e)
         }
+
+@api_router.post("/test-add-product")
+async def test_add_product():
+    """Temporary endpoint to test Eprolo Add Product (insert_product.html)"""
+    try:
+        import time, hashlib, httpx, json
+        
+        api_key = EPROLO_API_KEY
+        api_secret = EPROLO_API_SECRET
+        timestamp = str(int(time.time()))
+        sign_str = f"{api_key}{timestamp}{api_secret}"
+        sign = hashlib.md5(sign_str.encode()).hexdigest()
+        
+        url = f"https://openapi.eprolo.com/insert_product.html?timestamp={timestamp}&sign={sign}"
+        
+        payload = {
+            "title": "NOVAXS Test Product",
+            "body_html": "<p>This is a test product added via API for Novaxs store.</p>",
+            "product_id": "novaxs-test-001",
+            "optionList": [
+                {"name": "color"},
+                {"name": "size"}
+            ],
+            "variantsList": [
+                {
+                    "title": "Black-L",
+                    "sku": "novaxs-test-black-l",
+                    "option1": "Black",
+                    "option2": "L",
+                    "image_id": "1"
+                }
+            ],
+            "imageList": [
+                {
+                    "src": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
+                    "position": "1",
+                    "images_id": "1"
+                }
+            ]
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                url,
+                headers={
+                    "apiKey": api_key,
+                    "Content-Type": "application/json"
+                },
+                json=payload
+            )
+            data = response.json()
+        
+        return {
+            "status": "ok",
+            "http_status": response.status_code,
+            "raw_eprolo_response": data,
+            "timestamp_used": timestamp,
+            "sign_used": sign
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 # ============ Auth Routes ============
 
 @api_router.post("/auth/register", response_model=TokenResponse)
