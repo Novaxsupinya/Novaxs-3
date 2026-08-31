@@ -440,7 +440,7 @@ async def test_add_product():
         payload = {
             "title": "NOVAXS Test Product",
             "body_html": "<p>This is a test product added via API for Novaxs store.</p>",
-            "product_id": "novaxs-test-001",
+            "product_id": "novaxs-test-002",
             "optionList": [
                 {"name": "color"},
                 {"name": "size"}
