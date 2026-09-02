@@ -1432,7 +1432,17 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
-
+@api_router.post("/admin/clear-demo-products")
+async def admin_clear_demo_products(admin=Depends(get_admin_user)):
+    """Delete products that are not from Eprolo (demo products)"""
+    result = await db.products.delete_many({
+        "$or": [
+            {"eprolo_pid": {"$exists": False}},
+            {"eprolo_pid": None},
+            {"eprolo_pid": ""}
+        ]
+    })
+    return {"message": "Demo products cleared", "deleted_count": result.deleted_count}
 @api_router.post("/admin/sync-eprolo-products")
 async def admin_sync_eprolo_products(keyword: str = "", limit: int = 50, admin=Depends(get_admin_user), background_tasks: BackgroundTasks = None):
     """Sync products from EPROLO"""
