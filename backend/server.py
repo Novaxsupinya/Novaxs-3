@@ -600,13 +600,11 @@ async def get_products(
         "limit": limit,
         "pages": (total + limit - 1) // limit
     }
-
 @api_router.get("/products/featured")
 async def get_featured_products(limit: int = 8):
-    products = await db.products.find({"is_active": True}, {"_id": 0}).sort("reviews_count", -1).limit(limit).to_list(limit)
-    if not products:
-        products = await seed_demo_products()
-    return products[:limit]
+    products = await db.products.find({"is_active": True}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return products
+
 
 @api_router.get("/products/{product_id}")
 async def get_product(product_id: str):
