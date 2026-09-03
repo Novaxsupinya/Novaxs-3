@@ -61,7 +61,7 @@ const HomePage = () => {
 
           {/* Category Cards */}
           <div className="lg:col-span-4 grid grid-cols-2 gap-4">
-            {categories.slice(0, 4).map((cat) => (
+           {categories.slice(0, 6).map((cat) => (
               <Link
                 key={cat.id}
                 to={`/products?category=${cat.slug}`}
