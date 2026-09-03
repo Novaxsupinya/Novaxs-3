@@ -6,8 +6,7 @@ import {
   Shield,
   Package,
   CreditCard,
-  ChevronRight,
-  Star
+  ChevronRight
 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import ProductCard from "@/components/ProductCard";
@@ -32,50 +31,58 @@ const HomePage = () => {
   }, [API]);
 
   return (
-    <div data-testid="home-page" className="bg-white" data-version="v2">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 pt-6 pb-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Main Banner */}
-          <div className="lg:col-span-8 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A0A1F] via-[#0D0D2B] to-[#0A0A1F] min-h-[340px] md:min-h-[420px] flex items-center justify-center">
-            <img
-              src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
-              alt="NOVAXS"
-              className="absolute inset-0 w-full h-full object-contain opacity-90"
-            />
-            <div className="relative z-10 text-center px-6">
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 tracking-tight">
-                NOVAXS
-              </h1>
-              <p className="text-white/70 text-sm md:text-base mb-6">
-                The future of e-commerce
-              </p>
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-full transition"
-              >
-                Shop Now <ChevronRight className="w-4 h-4" />
-              </Link>
+    <div data-testid="home-page" className="bg-[#0a0618] text-white min-h-screen">
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b3a] via-[#0d0620] to-[#0a0618]" />
+        <div className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 50% 30%, rgba(168,85,247,0.35), transparent 55%)"
+          }}
+        />
+
+        <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-14 text-center">
+          {/* Logo / Brand */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-36 h-36 md:w-44 md:h-44 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-orange-400 p-[3px] shadow-[0_0_60px_rgba(168,85,247,0.55)] mb-5">
+              <div className="w-full h-full rounded-full bg-[#0a0618] flex items-center justify-center">
+                <span className="text-5xl md:text-6xl">🛒</span>
+              </div>
             </div>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-orange-200 bg-clip-text text-transparent">
+              NOVAXS
+            </h1>
+            <p className="mt-2 text-purple-200/90 text-base md:text-lg tracking-wide">
+              Elevate Your Lifestyle
+            </p>
+            <Link
+              to="/products"
+              className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-8 py-3 rounded-full shadow-lg shadow-purple-900/40 transition"
+            >
+              Shop Now <ChevronRight className="w-4 h-4" />
+            </Link>
           </div>
 
-          {/* Category Cards */}
-          <div className="lg:col-span-4 grid grid-cols-2 gap-4">
-           {categories.slice(0, 6).map((cat) => (
+          {/* Category Grid - all 6 */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
+            {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={`/products?category=${cat.slug}`}
-                className="relative rounded-2xl overflow-hidden group min-h-[160px] md:min-h-[200px] bg-slate-100"
+                className="group relative rounded-2xl overflow-hidden border border-purple-500/30 bg-[#120a28] hover:border-purple-400/60 transition min-h-[140px] md:min-h-[170px]"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
                   alt={cat.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <h3 className="text-sm font-bold leading-tight">{cat.name}</h3>
-                  <p className="text-white/80 text-xs mt-0.5">Explore →</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                  <h3 className="text-sm md:text-base font-bold text-white leading-tight drop-shadow">
+                    {cat.name}
+                  </h3>
+                  <p className="text-purple-200/80 text-xs mt-0.5">Explore →</p>
                 </div>
               </Link>
             ))}
@@ -84,7 +91,7 @@ const HomePage = () => {
       </section>
 
       {/* Trust Badges */}
-      <section className="border-y border-slate-100 bg-slate-50">
+      <section className="border-y border-purple-900/40 bg-[#0d0820]">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
@@ -94,12 +101,12 @@ const HomePage = () => {
               { icon: CreditCard, title: "Easy Returns", desc: "30-day guarantee" }
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="p-2.5 bg-orange-100 rounded-xl shrink-0">
-                  <item.icon className="w-5 h-5 text-orange-500" />
+                <div className="p-2.5 bg-purple-500/20 rounded-xl shrink-0">
+                  <item.icon className="w-5 h-5 text-orange-400" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-slate-900">{item.title}</h4>
-                  <p className="text-xs text-slate-500">{item.desc}</p>
+                  <h4 className="font-semibold text-sm text-white">{item.title}</h4>
+                  <p className="text-xs text-purple-200/70">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -107,48 +114,13 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Shop by Category */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-7">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Shop by Category</h2>
-          <Link
-            to="/products"
-            className="text-orange-500 font-medium flex items-center gap-1 text-sm hover:underline"
-          >
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/products?category=${cat.slug}`}
-              className="group"
-            >
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 mb-3">
-                <img
-                  src={cat.image || "https://via.placeholder.com/300"}
-                  alt={cat.name}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition" />
-              </div>
-              <h3 className="text-sm font-semibold text-slate-900 text-center group-hover:text-orange-500 transition">
-                {cat.name}
-              </h3>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* Featured Products */}
-      <section className="max-w-7xl mx-auto px-4 py-4 pb-14">
+      <section className="max-w-7xl mx-auto px-4 py-12 pb-16">
         <div className="flex items-center justify-between mb-7">
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Featured Products</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white">Featured Products</h2>
           <Link
             to="/products"
-            className="text-orange-500 font-medium flex items-center gap-1 text-sm hover:underline"
+            className="text-orange-400 font-medium flex items-center gap-1 text-sm hover:underline"
           >
             View All <ChevronRight className="w-4 h-4" />
           </Link>
@@ -157,7 +129,7 @@ const HomePage = () => {
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-slate-100 rounded-2xl h-80 animate-pulse" />
+              <div key={i} className="bg-purple-950/50 rounded-2xl h-80 animate-pulse" />
             ))}
           </div>
         ) : (
@@ -170,9 +142,9 @@ const HomePage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="bg-slate-900 text-white py-16">
+      <section className="bg-[#120a28] border-t border-purple-900/40 py-16">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-white">
             How Novaxs Works
           </h2>
           <div className="grid md:grid-cols-3 gap-10">
@@ -194,11 +166,11 @@ const HomePage = () => {
               }
             ].map((item, i) => (
               <div key={i} className="text-center">
-                <div className="text-5xl font-extrabold text-orange-500 mb-4">
+                <div className="text-5xl font-extrabold text-orange-400 mb-4">
                   {item.step}
                 </div>
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="text-xl font-bold mb-2 text-white">{item.title}</h3>
+                <p className="text-purple-200/70 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -209,4 +181,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
