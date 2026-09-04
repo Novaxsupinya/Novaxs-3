@@ -274,6 +274,7 @@ const ProductCard = ({ product }) => {
 };
 
 const HomePage = () => {
+  const { categories } = useApp();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -289,49 +290,85 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div>
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-8 overflow-hidden md:h-[500px] aspect-[4/3] md:aspect-auto rounded-[40px]" style={{ background: "linear-gradient(135deg, #0A0A1F 0%, #0D0D24 50%, #0A0A1F 100%)" }}>
-            <img 
-              src="https://customer-assets.emergentagent.com/job_dfe494f7-bb89-4ed5-9943-bc15fa3ca74e/artifacts/q3ekjzjv_1000005914.jpg"
-              alt="NOVAXS"
-              className="w-full h-full object-contain"
-            />
+    <div className="bg-[#0a0618] text-white min-h-screen">
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b3a] via-[#0d0620] to-[#0a0618]" />
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 50% 30%, rgba(168,85,247,0.35), transparent 55%)"
+          }}
+        />
+
+        <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-14 text-center">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-36 h-36 md:w-44 md:h-44 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-orange-400 p-[3px] shadow-[0_0_60px_rgba(168,85,247,0.55)] mb-5">
+              <div className="w-full h-full rounded-full bg-[#0a0618] flex items-center justify-center">
+                <span className="text-5xl md:text-6xl">🛒</span>
+              </div>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-orange-200 bg-clip-text text-transparent">
+              NOVAXS
+            </h1>
+            <p className="mt-2 text-purple-200/90 text-base md:text-lg tracking-wide">
+              Elevate Your Lifestyle
+            </p>
+            <Link
+              to="/products"
+              className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-8 py-3 rounded-full shadow-lg shadow-purple-900/40 transition"
+            >
+              Shop Now
+            </Link>
           </div>
-          <div className="md:col-span-4 flex flex-col gap-4">
-            <Link to="/products?category=mens-fashion" className="flex-1 relative rounded-2xl overflow-hidden group min-h-[240px]">
-              <img src="https://images.unsplash.com/photo-1658860547138-1e28dfb90867?w=600" alt="Men's Fashion" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <h3 className="text-xl font-bold">Men's Fashion</h3>
-                <p className="text-white/80 text-sm">Explore →</p>
-              </div>
-            </Link>
-            <Link to="/products?category=electronics" className="flex-1 relative rounded-2xl overflow-hidden group min-h-[240px]">
-              <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600" alt="Electronics" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <h3 className="text-xl font-bold">Electronics</h3>
-                <p className="text-white/80 text-sm">Explore →</p>
-              </div>
-            </Link>
+
+          {/* All 6 categories */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                to={"/products?category=" + cat.slug}
+                className="group relative rounded-2xl overflow-hidden border border-purple-500/30 bg-[#120a28] hover:border-purple-400/60 transition min-h-[140px] md:min-h-[170px]"
+              >
+                <img
+                  src={cat.image || "https://via.placeholder.com/400"}
+                  alt={cat.name}
+                  className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                  <h3 className="text-sm md:text-base font-bold text-white leading-tight">
+                    {cat.name}
+                  </h3>
+                  <p className="text-purple-200/80 text-xs mt-0.5">Explore →</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Featured Products</h2>
-          <Link to="/products" className="text-orange-500 text-sm font-medium">View All →</Link>
+      {/* Featured Products */}
+      <section className="max-w-7xl mx-auto px-4 py-12 pb-16">
+        <div className="flex items-center justify-between mb-7">
+          <h2 className="text-2xl md:text-3xl font-bold text-white">Featured Products</h2>
+          <Link to="/products" className="text-orange-400 font-medium text-sm hover:underline">
+            View All →
+          </Link>
         </div>
+
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-80 bg-slate-100 rounded-xl animate-pulse" />)}
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-80 bg-purple-950/50 rounded-xl animate-pulse" />
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {featuredProducts.map(p => <ProductCard key={p.id} product={p} />)}
+            {featuredProducts.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
           </div>
         )}
       </section>
