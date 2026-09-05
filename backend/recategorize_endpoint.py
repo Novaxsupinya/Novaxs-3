@@ -1,8 +1,8 @@
-# Paste this function into server.py above admin_clear_demo_products
+# COPY everything below this line into server.py
+# Paste it RIGHT ABOVE the line: @api_router.post("/admin/clear-demo-products")
 
 @api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
-    """Re-assign product categories based on name keywords"""
     rules = [
         (["women", "woman", "lady", "dress", "skirt", "blouse"], "womens-fashion"),
         (["men", "man", "male", "gentleman", "mens"], "mens-fashion"),
