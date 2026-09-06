@@ -291,31 +291,40 @@ const HomePage = () => {
 
   return (
     <div className="bg-[#0a0618] text-white min-h-screen">
-     {/* Hero */}
-      <section className="relative overflow-hidden min-h-[75vh] md:min-h-[85vh] flex items-center">
-        <img
-          src="/grok_image_1788659689834.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+    {/* Hero */}
+      <section className="relative overflow-hidden bg-[#0a0618]">
+        {/* Soft lightning glow only — not stretched logo */}
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 50% 20%, rgba(168,85,247,0.45), transparent 50%), radial-gradient(circle at 20% 80%, rgba(255,140,0,0.2), transparent 40%), radial-gradient(circle at 80% 70%, rgba(0,180,255,0.15), transparent 40%)"
+          }}
         />
-        <div className="absolute inset-0 bg-black/40" />
 
-        <div className="relative max-w-7xl mx-auto px-4 py-16 text-center w-full">
-          <div className="flex flex-col items-center mb-10">
+        <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-12 text-center">
+          {/* Logo at natural size */}
+          <div className="flex flex-col items-center mb-8">
+            <img
+              src="/grok_image_1788659689834.jpg"
+              alt="NOVAXS - Elevate Your Lifestyle"
+              className="w-[280px] sm:w-[340px] md:w-[420px] max-w-[90%] object-contain drop-shadow-[0_0_50px_rgba(168,85,247,0.55)]"
+            />
             <Link
               to="/products"
-              className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3.5 rounded-full shadow-lg shadow-purple-900/50 transition text-lg"
+              className="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3.5 rounded-full shadow-lg shadow-purple-900/50 transition text-lg"
             >
               Shop Now
             </Link>
           </div>
 
+          {/* 6 categories */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={"/products?category=" + cat.slug}
-                className="group relative rounded-2xl overflow-hidden border border-purple-500/40 bg-black/40 hover:border-purple-400/70 transition min-h-[140px] md:min-h-[170px] backdrop-blur-sm"
+                className="group relative rounded-2xl overflow-hidden border border-purple-500/40 bg-[#120a28] hover:border-purple-400/70 transition min-h-[140px] md:min-h-[170px]"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
