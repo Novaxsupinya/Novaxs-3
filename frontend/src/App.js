@@ -304,17 +304,11 @@ const HomePage = () => {
 
         <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-14 text-center">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-36 h-36 md:w-44 md:h-44 rounded-full bg-gradient-to-br from-purple-500 via-fuchsia-500 to-orange-400 p-[3px] shadow-[0_0_60px_rgba(168,85,247,0.55)] mb-5">
-              <div className="w-full h-full rounded-full bg-[#0a0618] flex items-center justify-center">
-                <span className="text-5xl md:text-6xl">🛒</span>
-              </div>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-orange-200 bg-clip-text text-transparent">
-              NOVAXS
-            </h1>
-            <p className="mt-2 text-purple-200/90 text-base md:text-lg tracking-wide">
-              Elevate Your Lifestyle
-            </p>
+           <img
+              src="/grok_image_1788659689834.jpg"
+              alt="NOVAXS - Elevate Your Lifestyle"
+              className="w-64 md:w-80 max-w-full object-contain mb-2 drop-shadow-[0_0_40px_rgba(168,85,247,0.6)]"
+            />
             <Link
               to="/products"
               className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-8 py-3 rounded-full shadow-lg shadow-purple-900/40 transition"
