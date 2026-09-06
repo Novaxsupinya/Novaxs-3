@@ -291,60 +291,53 @@ const HomePage = () => {
 
   return (
     <div className="bg-[#0a0618] text-white min-h-screen">
+   
     {/* Hero */}
-      <section className="relative overflow-hidden bg-[#0a0618]">
-        {/* Soft lightning glow only — not stretched logo */}
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 50% 20%, rgba(168,85,247,0.45), transparent 50%), radial-gradient(circle at 20% 80%, rgba(255,140,0,0.2), transparent 40%), radial-gradient(circle at 80% 70%, rgba(0,180,255,0.15), transparent 40%)"
-          }}
+      <section className="relative overflow-hidden min-h-[520px] md:min-h-[580px]">
+        {/* Lightning backdrop — contained, not stretched logo */}
+        <img
+          src="/grok_image_1788659689834.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-90"
         />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a0618]" />
 
-        <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-12 text-center">
-          {/* Logo at natural size */}
-          <div className="flex flex-col items-center mb-8">
-            <img
-              src="/grok_image_1788659689834.jpg"
-              alt="NOVAXS - Elevate Your Lifestyle"
-              className="w-[280px] sm:w-[340px] md:w-[420px] max-w-[90%] object-contain drop-shadow-[0_0_50px_rgba(168,85,247,0.55)]"
-            />
-            <Link
-              to="/products"
-              className="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3.5 rounded-full shadow-lg shadow-purple-900/50 transition text-lg"
-            >
-              Shop Now
-            </Link>
-          </div>
+        <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-12 text-center">
+          {/* Spacer so logo letters stay readable in the upper half */}
+          <div className="h-28 md:h-36" />
 
-          {/* 6 categories */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-9 py-3 rounded-full shadow-lg shadow-purple-900/50 transition text-base"
+          >
+            Shop Now
+          </Link>
+
+          {/* Category cards below logo area */}
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={"/products?category=" + cat.slug}
-                className="group relative rounded-2xl overflow-hidden border border-purple-500/40 bg-[#120a28] hover:border-purple-400/70 transition min-h-[140px] md:min-h-[170px]"
+                className="group relative rounded-xl overflow-hidden border border-white/20 bg-black/50 hover:border-purple-400/60 transition h-24 md:h-28 backdrop-blur-sm"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
                   alt={cat.name}
-                  className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
+                  className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                  <h3 className="text-sm md:text-base font-bold text-white leading-tight">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
+                  <h3 className="text-xs md:text-sm font-bold text-white leading-tight">
                     {cat.name}
                   </h3>
-                  <p className="text-purple-200/80 text-xs mt-0.5">Explore →</p>
+                  <p className="text-purple-200/70 text-[10px]">Explore →</p>
                 </div>
               </Link>
             ))}
           </div>
         </div>
-      </section>
-
-      {/* Featured Products */}
+      </section>  {/* Featured Products */}
       <section className="max-w-7xl mx-auto px-4 py-12 pb-16">
         <div className="flex items-center justify-between mb-7">
           <h2 className="text-2xl md:text-3xl font-bold text-white">Featured Products</h2>
