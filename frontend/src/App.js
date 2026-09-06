@@ -291,46 +291,38 @@ const HomePage = () => {
 
   return (
     <div className="bg-[#0a0618] text-white min-h-screen">
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0b3a] via-[#0d0620] to-[#0a0618]" />
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 50% 30%, rgba(168,85,247,0.35), transparent 55%)"
-          }}
+     {/* Hero */}
+      <section className="relative overflow-hidden min-h-[75vh] md:min-h-[85vh] flex items-center">
+        <img
+          src="/grok_image_1788659689834.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-black/40" />
 
-        <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-14 text-center">
-          <div className="flex flex-col items-center mb-8">
-           <img
-              src="/grok_image_1788659689834.jpg"
-              alt="NOVAXS - Elevate Your Lifestyle"
-              className="w-64 md:w-80 max-w-full object-contain mb-2 drop-shadow-[0_0_40px_rgba(168,85,247,0.6)]"
-            />
+        <div className="relative max-w-7xl mx-auto px-4 py-16 text-center w-full">
+          <div className="flex flex-col items-center mb-10">
             <Link
               to="/products"
-              className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-8 py-3 rounded-full shadow-lg shadow-purple-900/40 transition"
+              className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3.5 rounded-full shadow-lg shadow-purple-900/50 transition text-lg"
             >
               Shop Now
             </Link>
           </div>
 
-          {/* All 6 categories */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-4xl mx-auto">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={"/products?category=" + cat.slug}
-                className="group relative rounded-2xl overflow-hidden border border-purple-500/30 bg-[#120a28] hover:border-purple-400/60 transition min-h-[140px] md:min-h-[170px]"
+                className="group relative rounded-2xl overflow-hidden border border-purple-500/40 bg-black/40 hover:border-purple-400/70 transition min-h-[140px] md:min-h-[170px] backdrop-blur-sm"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
                   alt={cat.name}
                   className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
                   <h3 className="text-sm md:text-base font-bold text-white leading-tight">
                     {cat.name}
