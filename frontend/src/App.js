@@ -293,49 +293,52 @@ const HomePage = () => {
     <div className="bg-[#0a0618] text-white min-h-screen">
    
  {/* Hero */}
-      <section className="relative overflow-hidden bg-[#0a0618]">
-        {/* Lightning atmosphere (not stretched logo) */}
+      <section className="relative overflow-hidden bg-[#05010f]">
+        {/* Space + lightning atmosphere */}
         <div
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 50% 20%, rgba(168,85,247,0.45), transparent 50%), radial-gradient(circle at 15% 70%, rgba(0,180,255,0.12), transparent 40%), radial-gradient(circle at 85% 60%, rgba(255,120,0,0.18), transparent 40%)"
+              "radial-gradient(circle at 50% 30%, rgba(168,85,247,0.35), transparent 55%), radial-gradient(circle at 20% 70%, rgba(0,150,255,0.12), transparent 40%), radial-gradient(circle at 80% 60%, rgba(255,100,0,0.15), transparent 40%)"
           }}
         />
 
-        <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-10 text-center">
-          {/* Full logo — bright silver letters, nothing on top of it */}
+        <div className="relative max-w-5xl mx-auto px-4 pt-10 pb-12 text-center">
+          {/* Main logo graphic */}
           <img
             src="/grok_image_1788659689834.jpg"
             alt="NOVAXS - Elevate Your Lifestyle"
-            className="mx-auto w-64 sm:w-72 md:w-80 max-w-[90%] object-contain rounded-2xl shadow-[0_0_50px_rgba(168,85,247,0.5)]"
+            className="mx-auto w-[300px] sm:w-[380px] md:w-[460px] max-w-full object-contain drop-shadow-[0_0_60px_rgba(168,85,247,0.55)]"
           />
 
           <Link
             to="/products"
-            className="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-9 py-3 rounded-full shadow-lg shadow-purple-900/50 transition"
+            className="mt-4 inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3 rounded-full shadow-lg shadow-purple-900/40 transition text-base"
           >
             Shop Now
           </Link>
 
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
+          {/* Shop by Category */}
+          <h2 className="mt-10 mb-5 text-lg md:text-xl font-semibold text-white/90">
+            Shop by Category
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl mx-auto">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={"/products?category=" + cat.slug}
-                className="group relative rounded-xl overflow-hidden border border-purple-500/30 bg-[#120a28] hover:border-purple-400/60 transition h-24 md:h-28"
+                className="group relative rounded-2xl overflow-hidden border border-white/10 bg-[#120a28] hover:border-purple-400/50 transition aspect-[4/3]"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
                   alt={cat.name}
-                  className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
+                  className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
-                  <h3 className="text-xs md:text-sm font-bold text-white leading-tight">
-                    {cat.name}
-                  </h3>
-                  <p className="text-purple-200/70 text-[10px]">Explore →</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-white">{cat.name}</span>
+                  <span className="text-white/70 text-sm">→</span>
                 </div>
               </Link>
             ))}
