@@ -292,41 +292,38 @@ const HomePage = () => {
   return (
     <div className="bg-[#0a0618] text-white min-h-screen">
    
-    {/* Hero */}
-      <section className="relative overflow-hidden min-h-[520px] md:min-h-[580px]">
-        {/* Lightning backdrop — contained, not stretched logo */}
+   {/* Hero */}
+      <section className="relative overflow-hidden min-h-[560px] md:min-h-[620px]">
         <img
           src="/grok_image_1788659689834.jpg"
           alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-90"
+          className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-[#0a0618]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/40 to-[#0a0618]" />
 
-        <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-12 text-center">
-          {/* Spacer so logo letters stay readable in the upper half */}
-          <div className="h-28 md:h-36" />
+        <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-10 text-center">
+          <div className="h-36 sm:h-44 md:h-52" />
 
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-9 py-3 rounded-full shadow-lg shadow-purple-900/50 transition text-base"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-9 py-3 rounded-full shadow-lg shadow-purple-900/50 transition"
           >
             Shop Now
           </Link>
 
-          {/* Category cards below logo area */}
           <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 to={"/products?category=" + cat.slug}
-                className="group relative rounded-xl overflow-hidden border border-white/20 bg-black/50 hover:border-purple-400/60 transition h-24 md:h-28 backdrop-blur-sm"
+                className="group relative rounded-xl overflow-hidden border border-white/25 bg-black/55 hover:border-purple-400/60 transition h-24 md:h-28 backdrop-blur-sm"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
                   alt={cat.name}
-                  className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition duration-500"
+                  className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-95 group-hover:scale-105 transition duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
                   <h3 className="text-xs md:text-sm font-bold text-white leading-tight">
                     {cat.name}
