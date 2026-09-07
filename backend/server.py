@@ -1433,14 +1433,15 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
 
 @api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
-    rules = [
-        (["women", "woman", "lady", "dress", "skirt", "blouse"], "womens-fashion"),
-        (["men", "man", "male", "gentleman", "mens"], "mens-fashion"),
-        (["pet", "dog", "cat", "puppy", "kitten"], "pet-supplies"),
-        (["beauty", "skincare", "makeup", "cosmetic", "hair", "nail", "lotion", "cream"], "health-beauty"),
-        (["outdoor", "sport", "camping", "hiking", "yoga", "fitness", "gym"], "outdoor-sports"),
-        (["phone", "earbud", "headphone", "speaker", "charger", "cable", "laptop", "camera", "usb", "bluetooth", "watch"], "electronics"),
-        (["hoodie", "sweater", "cardigan", "jacket", "coat", "t-shirt", "pants", "jeans", "knit", "pullover"], "womens-fashion"),
+   rules = [
+        # Clothing first (so "nail hoodie" doesn't become beauty)
+        (["hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt", "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt", "blouse", "dress", "skirt", "leggings", "shorts", "romper"], "womens-fashion"),
+        (["men", "man", "male", "gentleman", "mens", "gentleman"], "mens-fashion"),
+        (["women", "woman", "lady", "ladies", "female"], "womens-fashion"),
+        (["pet", "dog", "cat", "puppy", "kitten", "collar", "leash"], "pet-supplies"),
+        (["drone", "phone", "iphone", "earbud", "headphone", "headset", "speaker", "charger", "cable", "laptop", "camera", "usb", "bluetooth", "smart watch", "smartwatch", "watch", "tablet", "keyboard", "mouse", "power bank", "led"], "electronics"),
+        (["beauty", "skincare", "makeup", "cosmetic", "lotion", "cream", "serum", "mascara", "lipstick", "foundation", "hair removal", "ipl"], "health-beauty"),
+        (["outdoor", "sport", "camping", "hiking", "yoga", "fitness", "gym", "backpack", "tent"], "outdoor-sports"),
     ]
     products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category": 1}).to_list(5000)
     updated = 0
