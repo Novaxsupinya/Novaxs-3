@@ -1447,7 +1447,7 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
     updated = 0
     for p in products:
         name = (p.get("name") or "").lower()
-        new_cat = "womens-fashion"
+       new_cat = p.get("category") or "womens-fashion"
         for keywords, cat in rules:
             if any(k in name for k in keywords):
                 new_cat = cat
