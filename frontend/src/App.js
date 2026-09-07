@@ -337,7 +337,8 @@ const HomePage = () => {
             ))}
           </div>
         </div>
-      </section>  {/* Featured Products */}
+      </section>
+            {/* Featured Products */}
       <section className="max-w-7xl mx-auto px-4 py-12 pb-16">
         <div className="flex items-center justify-between mb-7">
           <h2 className="text-2xl md:text-3xl font-bold text-white">Featured Products</h2>
