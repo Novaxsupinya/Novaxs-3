@@ -292,34 +292,28 @@ const HomePage = () => {
   return (
     <div className="bg-[#0a0618] text-white min-h-screen">
    
- {/* Hero */}
-      <section className="relative overflow-hidden bg-[#05010f]">
-        {/* Space + lightning atmosphere */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 50% 30%, rgba(168,85,247,0.35), transparent 55%), radial-gradient(circle at 20% 70%, rgba(0,150,255,0.12), transparent 40%), radial-gradient(circle at 80% 60%, rgba(255,100,0,0.15), transparent 40%)"
-          }}
-        />
-
-        <div className="relative max-w-5xl mx-auto px-4 pt-10 pb-12 text-center">
-          {/* Main logo graphic */}
+{/* Hero */}
+      <section className="relative overflow-hidden bg-black">
+        <div className="relative w-full">
           <img
-            src="/grok_image_1788659689834.jpg"
+            src="/grok_1788783802961.jpg"
             alt="NOVAXS - Elevate Your Lifestyle"
-            className="mx-auto w-[300px] sm:w-[380px] md:w-[460px] max-w-full object-contain drop-shadow-[0_0_60px_rgba(168,85,247,0.55)]"
+            className="w-full h-auto max-h-[70vh] md:max-h-[75vh] object-cover object-center"
           />
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0a0618] to-transparent" />
+        </div>
 
+        <div className="relative -mt-6 md:-mt-8 flex justify-center pb-6">
           <Link
             to="/products"
-            className="mt-4 inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3 rounded-full shadow-lg shadow-purple-900/40 transition text-base"
+            className="inline-flex items-center justify-center bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-10 py-3 rounded-full shadow-lg shadow-purple-900/50 transition text-base"
           >
             Shop Now
           </Link>
+        </div>
 
-          {/* Shop by Category */}
-          <h2 className="mt-10 mb-5 text-lg md:text-xl font-semibold text-white/90">
+        <div className="max-w-5xl mx-auto px-4 pb-12 text-center">
+          <h2 className="mb-5 text-lg md:text-xl font-semibold text-white/90">
             Shop by Category
           </h2>
 
