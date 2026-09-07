@@ -432,7 +432,7 @@ const ProductDetailPage = () => {
   if (!product) return <div className="text-center py-16">Product not found</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+   <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen bg-[#0a0618] text-white">
       <div className="grid md:grid-cols-2 gap-8">
         <div className="aspect-square bg-slate-100 rounded-2xl overflow-hidden">
           <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
@@ -610,23 +610,26 @@ const CheckoutPage = () => {
 };
 
 const Footer = () => (
-  <footer className="bg-slate-900 text-white mt-16">
+  <footer className="bg-[#0a0618] text-white border-t border-purple-900/40">
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
         <div>
           <h3 className="text-xl font-bold mb-4"><span className="text-orange-500">Nova</span>xs</h3>
-          <p className="text-slate-400 text-sm">Your one-stop shop for amazing deals.</p>
+          <p className="text-slate-400 text-sm">Elevate Your Lifestyle.</p>
         </div>
         <div>
           <h4 className="font-semibold mb-4">Shop</h4>
           <ul className="space-y-2 text-sm text-slate-400">
             <li><Link to="/products?category=womens-fashion" className="hover:text-orange-500">Women's Fashion</Link></li>
             <li><Link to="/products?category=mens-fashion" className="hover:text-orange-500">Men's Fashion</Link></li>
+            <li><Link to="/products?category=pet-supplies" className="hover:text-orange-500">Pet Supplies</Link></li>
             <li><Link to="/products?category=electronics" className="hover:text-orange-500">Electronics</Link></li>
+            <li><Link to="/products?category=health-beauty" className="hover:text-orange-500">Health & Beauty</Link></li>
+            <li><Link to="/products?category=outdoor-sports" className="hover:text-orange-500">Outdoor & Sports</Link></li>
           </ul>
         </div>
       </div>
-      <Separator className="my-8 bg-slate-700" />
+      <Separator className="my-8 bg-purple-900/50" />
       <p className="text-sm text-slate-400 text-center">© 2026 Novaxs. All rights reserved.</p>
     </div>
   </footer>
@@ -636,7 +639,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-[#0a0618]">
           <Toaster position="top-center" richColors />
           <Header />
           <main className="flex-1">
