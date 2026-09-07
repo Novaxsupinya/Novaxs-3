@@ -292,21 +292,28 @@ const HomePage = () => {
   return (
     <div className="bg-[#0a0618] text-white min-h-screen">
    
-   {/* Hero */}
-      <section className="relative overflow-hidden min-h-[560px] md:min-h-[620px]">
-        <img
-          src="/grok_image_1788659689834.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+ {/* Hero */}
+      <section className="relative overflow-hidden bg-[#0a0618]">
+        {/* Lightning atmosphere (not stretched logo) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 50% 20%, rgba(168,85,247,0.45), transparent 50%), radial-gradient(circle at 15% 70%, rgba(0,180,255,0.12), transparent 40%), radial-gradient(circle at 85% 60%, rgba(255,120,0,0.18), transparent 40%)"
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/40 to-[#0a0618]" />
 
         <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-10 text-center">
-          <div className="h-36 sm:h-44 md:h-52" />
+          {/* Full logo — bright silver letters, nothing on top of it */}
+          <img
+            src="/grok_image_1788659689834.jpg"
+            alt="NOVAXS - Elevate Your Lifestyle"
+            className="mx-auto w-64 sm:w-72 md:w-80 max-w-[90%] object-contain rounded-2xl shadow-[0_0_50px_rgba(168,85,247,0.5)]"
+          />
 
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-9 py-3 rounded-full shadow-lg shadow-purple-900/50 transition"
+            className="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white font-semibold px-9 py-3 rounded-full shadow-lg shadow-purple-900/50 transition"
           >
             Shop Now
           </Link>
@@ -316,14 +323,14 @@ const HomePage = () => {
               <Link
                 key={cat.id}
                 to={"/products?category=" + cat.slug}
-                className="group relative rounded-xl overflow-hidden border border-white/25 bg-black/55 hover:border-purple-400/60 transition h-24 md:h-28 backdrop-blur-sm"
+                className="group relative rounded-xl overflow-hidden border border-purple-500/30 bg-[#120a28] hover:border-purple-400/60 transition h-24 md:h-28"
               >
                 <img
                   src={cat.image || "https://via.placeholder.com/400"}
                   alt={cat.name}
-                  className="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-95 group-hover:scale-105 transition duration-500"
+                  className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-2 text-left">
                   <h3 className="text-xs md:text-sm font-bold text-white leading-tight">
                     {cat.name}
