@@ -1337,7 +1337,7 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
 @api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
     rules = [
-        (["hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt", "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt", "blouse", "dress", "skirt", "leggings", "shorts", "romper"], "womens-fashion"),
+        (["hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt", "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt", "blouse", "dress", "skirt", "leggings","shorts", "romper", "shapewear", "bra", "brief", "cami", "lingerie", "panty", "corset"], "womens-fashion"), ], "womens-fashion"),
         (["men", "man", "male", "gentleman", "mens"], "mens-fashion"),
         (["women", "woman", "lady", "ladies", "female"], "womens-fashion"),
         (["pet", "dog", "cat", "puppy", "kitten", "collar", "leash"], "pet-supplies"),
@@ -1349,7 +1349,7 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
     updated = 0
     for p in products:
         name = (p.get("name") or "").lower()
-        new_cat = p.get("category") or "womens-fashion"
+        new_cat = "womens-fashion"
         for keywords, cat in rules:
             if any(k in name for k in keywords):
                 new_cat = cat
