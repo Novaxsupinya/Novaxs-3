@@ -1378,7 +1378,7 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
         if p.get("category") != new_cat:
             await db.products.update_one({"id": p["id"]}, {"$set": {"category": new_cat}})
             updated += 1
-    return {"message": "Recategorize complete", "updated": updated, "total_checked": len(products)} 
+    return {"message": "Recategorize complete", "updated": updated, "total_checked": len(products)}
 
 @api_router.post("/admin/clear-demo-products")
 async def admin_clear_demo_products(admin=Depends(get_admin_user)):
