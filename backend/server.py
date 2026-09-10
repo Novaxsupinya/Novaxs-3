@@ -1354,7 +1354,7 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
     
-   @api_router.post("/admin/recategorize-products")
+@api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
     rules = [
         (["hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt", "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt", "blouse", "dress", "skirt", "leggings", "shorts", "romper", "shapewear", "bra", "brief", "cami", "lingerie", "panty", "corset"], "womens-fashion"),
