@@ -966,14 +966,34 @@ async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
     """Background task to sync EPROLO products - fixed field mapping"""
     categories_map = {
         "women": "womens-fashion",
-        "men": "mens-fashion", 
+        "dress": "womens-fashion",
+        "bra": "womens-fashion",
+        "men": "mens-fashion",
         "pet": "pet-supplies",
-        "electronic": "electronics",
+        "dog": "pet-supplies",
+        "cat": "pet-supplies",
+        "phone": "electronics",
+        "earbud": "electronics",
+        "headphone": "electronics",
+        "speaker": "electronics",
+        "laptop": "electronics",
+        "camera": "electronics",
+        "bluetooth": "electronics",
+        "smartwatch": "electronics",
+        "charger": "electronics",
         "beauty": "health-beauty",
+        "shampoo": "health-beauty",
+        "skincare": "health-beauty",
+        "moisturizer": "health-beauty",
+        "toner": "health-beauty",
+        "serum": "health-beauty",
+        "makeup": "health-beauty",
+        "hair": "health-beauty",
+        "skin": "health-beauty",
         "outdoor": "outdoor-sports",
         "sport": "outdoor-sports",
-        "tapestry": "home-decor",
-        "curtain": "home-decor"
+        "camping": "outdoor-sports",
+        "yoga": "outdoor-sports",
     }
     
     # Get products from My Products (status=1)
@@ -1007,7 +1027,7 @@ async def sync_products_from_eprolo(keyword: str = "", limit: int = 50):
                 price = round(cost * 1.8, 2)  # 80% markup
         
         # Category
-        category = "electronics"
+        category = "womens-fashion"
         title_lower = title.lower()
         for key, cat in categories_map.items():
             if key in title_lower:
