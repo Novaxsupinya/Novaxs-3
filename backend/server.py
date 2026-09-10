@@ -1354,16 +1354,17 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
     
-@api_router.post("/admin/recategorize-products")
+   @api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
     rules = [
         (["hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt", "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt", "blouse", "dress", "skirt", "leggings", "shorts", "romper", "shapewear", "bra", "brief", "cami", "lingerie", "panty", "corset"], "womens-fashion"),
-        (["men", "man", "male", "gentleman", "mens"], "mens-fashion"),
+        (["men ", " men's", "male", "gentleman", "mens "], "mens-fashion"),
         (["women", "woman", "lady", "ladies", "female"], "womens-fashion"),
         (["pet", "dog", "cat", "puppy", "kitten", "collar", "leash"], "pet-supplies"),
-        (["drone", "phone", "iphone", "earbud", "headphone", "headset", "speaker", "charger", "cable", "laptop", "camera", "usb", "bluetooth", "smart watch", "smartwatch", "watch", "tablet", "keyboard", "mouse", "power bank", "led"], "electronics"),
-        (["beauty", "skincare", "makeup", "cosmetic", "lotion", "cream", "serum", "mascara", "lipstick", "foundation", "hair removal", "ipl"], "health-beauty"),
-        (["outdoor", "sport", "camping", "hiking", "yoga", "fitness", "gym", "backpack", "tent"], "outdoor-sports"),
+        (["shampoo", "moisturizer", "toner", "serum", "cream", "lotion", "skincare", "makeup", "cosmetic", "lipstick", "mascara", "foundation", "hair care", "hair essence", "body moisturizer", "facial", "exfoliat", "capsule", "vitamin", "denture", "tattoo sticker"], "health-beauty"),
+        (["earbud", "headphone", "headset", "speaker", "iphone", "smartphone", "laptop", "camera", "bluetooth", "smart watch", "smartwatch", "keyboard", "mouse", "power bank", "charger", "usb cable", "drone", "led light", "night light", "projection"], "electronics"),
+        (["outdoor", "camping", "hiking", "yoga", "fitness", "gym", "backpack", "tent"], "outdoor-sports"),
+        (["car wax", "auto ceramic", "rust removal", "wheel rust", "butyl tape", "decontaminat", "coating"], "outdoor-sports"),
     ]
     products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category": 1}).to_list(5000)
     updated = 0
@@ -1377,7 +1378,8 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
         if p.get("category") != new_cat:
             await db.products.update_one({"id": p["id"]}, {"$set": {"category": new_cat}})
             updated += 1
-    return {"message": "Recategorize complete", "updated": updated, "total_checked": len(products)}
+    return {"message": "Recategorize complete", "updated": updated, "total_checked": len(products)} 
+
 @api_router.post("/admin/clear-demo-products")
 async def admin_clear_demo_products(admin=Depends(get_admin_user)):
     """Delete products that are not from Eprolo (demo products)"""
