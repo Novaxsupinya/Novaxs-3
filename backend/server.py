@@ -1391,6 +1391,36 @@ async def admin_clear_demo_products(admin=Depends(get_admin_user)):
         ]
     })
     return {"message": "Demo products cleared", "deleted_count": result.deleted_count}
+ @api_router.post("/admin/rebalance-categories")
+async def admin_rebalance_categories(max_per_category: int = 50, admin=Depends(get_admin_user)):
+    """Keep only the newest max_per_category products in each category; delete the rest."""
+    slugs = [
+        "womens-fashion",
+        "mens-fashion",
+        "pet-supplies",
+        "electronics",
+        "health-beauty",
+        "outdoor-sports",
+    ]
+    deleted_total = 0
+    kept = {}
+    for slug in slugs:
+        products = await db.products.find(
+            {"category": slug},
+            {"_id": 0, "id": 1, "created_at": 1}
+        ).sort("created_at", -1).to_list(5000)
+        keep_ids = {p["id"] for p in products[:max_per_category]}
+        extra_ids = [p["id"] for p in products[max_per_category:]]
+        if extra_ids:
+            result = await db.products.delete_many({"id": {"$in": extra_ids}})
+            deleted_total += result.deleted_count
+        kept[slug] = min(len(products), max_per_category)
+    return {
+        "message": "Rebalance complete",
+        "kept_per_category": kept,
+        "deleted": deleted_total,
+        "max_per_category": max_per_category,
+    }   
 @api_router.post("/admin/sync-eprolo-products")
 async def admin_sync_eprolo_products(keyword: str = "", limit: int = 50, admin=Depends(get_admin_user), background_tasks: BackgroundTasks = None):
     """Sync products from EPROLO"""
