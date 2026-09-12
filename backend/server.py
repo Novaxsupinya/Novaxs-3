@@ -1391,7 +1391,7 @@ async def admin_clear_demo_products(admin=Depends(get_admin_user)):
         ]
     })
     return {"message": "Demo products cleared", "deleted_count": result.deleted_count}
- @api_router.post("/admin/rebalance-categories")
+@api_router.post("/admin/rebalance-categories")
 async def admin_rebalance_categories(max_per_category: int = 50, admin=Depends(get_admin_user)):
     """Keep only the newest max_per_category products in each category; delete the rest."""
     slugs = [
