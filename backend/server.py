@@ -1420,7 +1420,48 @@ async def admin_rebalance_categories(max_per_category: int = 50, admin=Depends(g
         "kept_per_category": kept,
         "deleted": deleted_total,
         "max_per_category": max_per_category,
-    }   
+    }
+@api_router.get("/admin/debug-eprolo-products")
+async def admin_debug_eprolo_products(page_size: int = 50, admin=Depends(get_admin_user)):
+    """Raw Eprolo My Products API response for debugging"""
+    auth = eprolo_service._get_auth_params()
+    params = (
+        f"timestamp={auth['timestamp']}"
+        f"&sign={auth['sign']}"
+        f"&page_index=0"
+        f"&page_size={page_size}"
+        f"&status=1"
+    )
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"{eprolo_service.base_url}/eprolo_product_list.html?{params}",
+            headers=eprolo_service._get_headers()
+        )
+        try:
+            data = response.json()
+        except Exception:
+            data = {"parse_error": True, "text": response.text[:2000]}
+    products = []
+    if isinstance(data, dict):
+        raw = data.get("data") or []
+        if isinstance(raw, list):
+            products = raw
+        elif isinstance(raw, dict):
+            products = raw.get("list") or raw.get("productList") or []
+    names = []
+    for p in products[:20]:
+        if isinstance(p, dict):
+            names.append(p.get("title") or p.get("name") or p.get("nameEn") or str(p.get("id")))
+    return {
+        "http_status": response.status_code,
+        "api_code": data.get("code") if isinstance(data, dict) else None,
+        "api_msg": data.get("msg") if isinstance(data, dict) else None,
+        "products_count": len(products),
+        "sample_names": names,
+        "api_key_set": bool(EPROLO_API_KEY),
+        "api_secret_set": bool(EPROLO_API_SECRET),
+        "raw_eprolo_response": data,
+    }    
 @api_router.post("/admin/sync-eprolo-products")
 async def admin_sync_eprolo_products(keyword: str = "", limit: int = 50, admin=Depends(get_admin_user), background_tasks: BackgroundTasks = None):
     """Sync products from EPROLO"""
