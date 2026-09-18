@@ -272,7 +272,7 @@ class EproloService:
             "Content-Type": "application/json"
         }
     
-   async def get_products(self, keyword: str = "", page: int = 1, size: int = 50):
+    async def get_products(self, keyword: str = "", page: int = 1, size: int = 50):
         """Get products from EPROLO - walks all pages of My Products (status=1)"""
         if not self.api_key or not self.api_secret:
             logger.warning("EPROLO API credentials not configured")
