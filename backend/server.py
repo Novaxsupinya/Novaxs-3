@@ -1370,30 +1370,77 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
     
 @api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
-    rules = [
-        (["hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt", "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt", "blouse", "dress", "skirt", "leggings", "shorts", "romper", "shapewear", "bra", "brief", "cami", "lingerie", "panty", "corset"], "womens-fashion"),
-        (["men ", " men's", "male", "gentleman", "mens "], "mens-fashion"),
-        (["women", "woman", "lady", "ladies", "female"], "womens-fashion"),
-        (["pet", "dog", "cat", "puppy", "kitten", "collar", "leash"], "pet-supplies"),
-        (["shampoo", "moisturizer", "toner", "serum", "cream", "lotion", "skincare", "makeup", "cosmetic", "lipstick", "mascara", "foundation", "hair care", "hair essence", "body moisturizer", "facial", "exfoliat", "capsule", "vitamin", "denture", "tattoo sticker"], "health-beauty"),
-        (["earbud", "headphone", "headset", "speaker", "iphone", "smartphone", "laptop", "camera", "bluetooth", "smart watch", "smartwatch", "keyboard", "mouse", "power bank", "charger", "usb cable", "drone", "led light", "night light", "projection"], "electronics"),
-        (["outdoor", "camping", "hiking", "yoga", "fitness", "gym", "backpack", "tent"], "outdoor-sports"),
-        (["car wax", "auto ceramic", "rust removal", "wheel rust", "butyl tape", "decontaminat", "coating"], "outdoor-sports"),
+    """Re-tag products. Order matters: gender and non-fashion first, clothing last."""
+    men_kw = [
+        "men's", "mens ", " men ", "male ", "gentleman", "for men", "man ",
+        "boys'", "boys ", "boy's", "gentleman"
     ]
-    products = await db.products.find({}, {"_id": 0, "id": 1, "name": 1, "category": 1}).to_list(5000)
+    women_kw = [
+        "women's", "womens ", "woman", "women ", "lady", "ladies", "female",
+        "girls'", "girls ", "girl's", "blouse", "dress", "skirt", "leggings",
+        "romper", "shapewear", "bra ", "brief", "cami", "lingerie", "panty",
+        "corset", "crop top", "camisole"
+    ]
+    pet_kw = ["pet ", " dog", "dog ", " cat", "cat ", "puppy", "kitten", "leash", "pet-"]
+    beauty_kw = [
+        "shampoo", "moisturizer", "toner", "serum", "skincare", "makeup",
+        "cosmetic", "lipstick", "mascara", "foundation", "facial", "exfoliat",
+        "hair care", "hair essence", "vitamin", "denture", "tattoo sticker"
+    ]
+    # Avoid weak matches like "laptop sleeve" / random "light"
+    electronics_kw = [
+        "earbud", "earbuds", "headphone", "headphones", "headset", "speaker",
+        "iphone", "smartphone", "smart watch", "smartwatch", "bluetooth",
+        "keyboard", "power bank", "usb cable", "drone", "camera", "microphone",
+        "wireless mic", "gaming mouse", "tablet"
+    ]
+    outdoor_kw = [
+        "outdoor", "camping", "hiking", "yoga", "fitness", "gym ", "backpack",
+        "tent", "fishing", "bicycle", "bike "
+    ]
+    clothing_kw = [
+        "hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt",
+        "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt",
+        "shorts", "trouser", "joggers", "windbreaker", "outerwear"
+    ]
+
+    products = await db.products.find(
+        {}, {"_id": 0, "id": 1, "name": 1, "description": 1, "category": 1}
+    ).to_list(5000)
     updated = 0
+
     for p in products:
-        name = (p.get("name") or "").lower()
-        new_cat = "womens-fashion"
-        for keywords, cat in rules:
-            if any(k in name for k in keywords):
-                new_cat = cat
-                break
+        text = f"{p.get('name') or ''} {p.get('description') or ''}".lower()
+        new_cat = None
+
+        if any(k in text for k in men_kw):
+            new_cat = "mens-fashion"
+        elif any(k in text for k in women_kw):
+            new_cat = "womens-fashion"
+        elif any(k in text for k in electronics_kw):
+            new_cat = "electronics"
+        elif any(k in text for k in pet_kw):
+            new_cat = "pet-supplies"
+        elif any(k in text for k in beauty_kw):
+            new_cat = "health-beauty"
+        elif any(k in text for k in outdoor_kw):
+            new_cat = "outdoor-sports"
+        elif any(k in text for k in clothing_kw):
+            # Gender-unknown clothing: do NOT dump into women's
+            new_cat = "mens-fashion" if any(k in text for k in ["boy", "men", "male"]) else "womens-fashion"
+        else:
+            # Keep existing category instead of forcing women's
+            new_cat = p.get("category") or "outdoor-sports"
+
         if p.get("category") != new_cat:
             await db.products.update_one({"id": p["id"]}, {"$set": {"category": new_cat}})
             updated += 1
-    return {"message": "Recategorize complete", "updated": updated, "total_checked": len(products)}
 
+    return {
+        "message": "Recategorize complete",
+        "updated": updated,
+        "total_checked": len(products),
+    }
 @api_router.post("/admin/clear-demo-products")
 async def admin_clear_demo_products(admin=Depends(get_admin_user)):
     """Delete products that are not from Eprolo (demo products)"""
