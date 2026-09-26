@@ -1377,7 +1377,7 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
         "shorts", "trouser", "joggers", "windbreaker", "outerwear", "blouse",
         "dress", "skirt", "leggings", "romper", "hoodie", "tracksuit",
         "sweatpants", "camisole", "crop top", "two-piece", "2-piece", "3-piece",
-        "outfit set", "sportswear set", "piece set",
+        "outfit set", "sportswear set", "piece set", "jumpsuit", "yoga", "bodysuit",
     ]
     women_kw = [
         "women's", "womens ", "woman", "women ", "lady", "ladies", "female",
