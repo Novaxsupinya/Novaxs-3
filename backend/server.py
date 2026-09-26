@@ -1444,8 +1444,12 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
         elif any(k in text for k in outdoor_kw):
             new_cat = "outdoor-sports"
         else:
-            new_cat = p.get("category") or "womens-fashion"
-
+            # Do not keep old wrong tags for pets/electronics/outdoor
+            old = p.get("category") or ""
+            if old in ("pet-supplies", "electronics", "outdoor-sports"):
+                new_cat = "womens-fashion"
+            else:
+                new_cat = old or "womens-fashion"
         if p.get("category") != new_cat:
             await db.products.update_one({"id": p["id"]}, {"$set": {"category": new_cat}})
             updated += 1
