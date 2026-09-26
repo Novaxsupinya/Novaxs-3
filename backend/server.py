@@ -1395,7 +1395,7 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
         "dog leash", "cat leash", "pet leash", "for dogs", "for cats",
         "dog collar", "cat collar", "pet collar", "puppy toy", "kitten toy",
         "pet carrier", "dog bowl", "cat bowl", "pet shampoo", "dog treat",
-        "cat treat", "pet supplies",
+        "cat treat", "pet supplies", "pet odor", "pet hair", "cats and dogs", "for cats and dogs", "pet fragrance",
     ]
     beauty_kw = [
         "shampoo", "moisturizer", "toner", "serum", "skincare", "makeup",
