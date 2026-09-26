@@ -1370,38 +1370,47 @@ async def admin_delete_product(product_id: str, admin=Depends(get_admin_user)):
     
 @api_router.post("/admin/recategorize-products")
 async def admin_recategorize_products(admin=Depends(get_admin_user)):
-    """Re-tag products. Order matters: gender and non-fashion first, clothing last."""
-    men_kw = [
-        "men's", "mens ", " men ", "male ", "gentleman", "for men", "man ",
-        "boys'", "boys ", "boy's", "gentleman"
+    """Re-tag products. Clothing is forced to fashion BEFORE pet/outdoor keywords."""
+    clothing_kw = [
+        "hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt",
+        "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt",
+        "shorts", "trouser", "joggers", "windbreaker", "outerwear", "blouse",
+        "dress", "skirt", "leggings", "romper", "hoodie", "tracksuit",
+        "sweatpants", "camisole", "crop top", "two-piece", "2-piece", "3-piece",
+        "outfit set", "sportswear set", "piece set",
     ]
     women_kw = [
         "women's", "womens ", "woman", "women ", "lady", "ladies", "female",
         "girls'", "girls ", "girl's", "blouse", "dress", "skirt", "leggings",
-        "romper", "shapewear", "bra ", "brief", "cami", "lingerie", "panty",
-        "corset", "crop top", "camisole"
+        "romper", "shapewear", "bra ", "lingerie", "panty", "corset",
+        "crop top", "camisole", "cat mom",
     ]
-    pet_kw = ["pet ", " dog", "dog ", " cat", "cat ", "puppy", "kitten", "leash", "pet-"]
+    men_kw = [
+        "men's", "mens ", " men ", "for men", "gentleman",
+        "boys'", "boys ", "boy's", "toddler kids",
+    ]
+    # Real pet products only — NOT bare "cat"/"dog" (avoids Cat Mom hoodie)
+    pet_kw = [
+        "pet bed", "pet toy", "pet food", "dog food", "cat food", "cat litter",
+        "dog leash", "cat leash", "pet leash", "for dogs", "for cats",
+        "dog collar", "cat collar", "pet collar", "puppy toy", "kitten toy",
+        "pet carrier", "dog bowl", "cat bowl", "pet shampoo", "dog treat",
+        "cat treat", "pet supplies",
+    ]
     beauty_kw = [
         "shampoo", "moisturizer", "toner", "serum", "skincare", "makeup",
         "cosmetic", "lipstick", "mascara", "foundation", "facial", "exfoliat",
-        "hair care", "hair essence", "vitamin", "denture", "tattoo sticker"
+        "hair care", "nail polish", "sunscreen", "lotion",
     ]
-    # Avoid weak matches like "laptop sleeve" / random "light"
     electronics_kw = [
-        "earbud", "earbuds", "headphone", "headphones", "headset", "speaker",
-        "iphone", "smartphone", "smart watch", "smartwatch", "bluetooth",
-        "keyboard", "power bank", "usb cable", "drone", "camera", "microphone",
-        "wireless mic", "gaming mouse", "tablet"
+        "earbud", "earbuds", "headphone", "headphones", "headset",
+        "bluetooth speaker", "iphone", "smartphone", "smart watch", "smartwatch",
+        "power bank", "usb cable", "drone", "microphone", "wireless mic",
+        "gaming mouse", "tablet pc", "led tv",
     ]
     outdoor_kw = [
-        "outdoor", "camping", "hiking", "yoga", "fitness", "gym ", "backpack",
-        "tent", "fishing", "bicycle", "bike "
-    ]
-    clothing_kw = [
-        "hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt",
-        "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt",
-        "shorts", "trouser", "joggers", "windbreaker", "outerwear"
+        "camping", "hiking", "tent", "sleeping bag", "fishing rod",
+        "bicycle", "bike rack", "climbing rope", "portable stove",
     ]
 
     products = await db.products.find(
@@ -1412,12 +1421,21 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
     for p in products:
         text = f"{p.get('name') or ''} {p.get('description') or ''}".lower()
         new_cat = None
+        is_clothing = any(k in text for k in clothing_kw)
 
-        if any(k in text for k in men_kw):
-            new_cat = "mens-fashion"
+        # 1) Apparel always goes to fashion (never pets/outdoor/electronics)
+        if is_clothing:
+            if any(k in text for k in men_kw):
+                new_cat = "mens-fashion"
+            elif any(k in text for k in women_kw):
+                new_cat = "womens-fashion"
+            else:
+                new_cat = "womens-fashion"
         elif any(k in text for k in women_kw):
             new_cat = "womens-fashion"
-        elif any(k in text for k in electronics_kw):
+        elif any(k in text for k in men_kw):
+            new_cat = "mens-fashion"
+        elif any(k in text for k in electronics_kw) and "sleeve" not in text:
             new_cat = "electronics"
         elif any(k in text for k in pet_kw):
             new_cat = "pet-supplies"
@@ -1425,12 +1443,8 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
             new_cat = "health-beauty"
         elif any(k in text for k in outdoor_kw):
             new_cat = "outdoor-sports"
-        elif any(k in text for k in clothing_kw):
-            # Gender-unknown clothing: do NOT dump into women's
-            new_cat = "mens-fashion" if any(k in text for k in ["boy", "men", "male"]) else "womens-fashion"
         else:
-            # Keep existing category instead of forcing women's
-            new_cat = p.get("category") or "outdoor-sports"
+            new_cat = p.get("category") or "womens-fashion"
 
         if p.get("category") != new_cat:
             await db.products.update_one({"id": p["id"]}, {"$set": {"category": new_cat}})
