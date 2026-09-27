@@ -1431,7 +1431,7 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
                 new_cat = "mens-fashion"
             else:
                 new_cat = "womens-fashion"
-      elif any(k in text for k in women_kw) or "women" in text:
+        elif any(k in text for k in women_kw) or "women" in text:
             new_cat = "womens-fashion"
         elif any(k in text for k in men_kw) and "women" not in text:
             new_cat = "mens-fashion"
