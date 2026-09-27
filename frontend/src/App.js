@@ -452,7 +452,10 @@ const ProductsPage = () => {
           <Button
             variant="outline"
             className="border-purple-500 text-white hover:bg-purple-900"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => {
+              setPage((p) => Math.min(totalPages, p + 1));
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
             disabled={page >= totalPages}
           >
             Next
