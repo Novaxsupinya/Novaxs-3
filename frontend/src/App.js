@@ -369,48 +369,96 @@ const HomePage = () => {
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [searchParams] = useSearchParams();
   const category = searchParams.get("category");
   const search = searchParams.get("search");
+  const limit = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [category, search]);
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        let url = API + "/products?";
-        if (category) url += "category=" + category + "&";
-        if (search) url += "search=" + encodeURIComponent(search);
-        const res = await axios.get(url);
-        setProducts(res.data.products || res.data || []);
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+        if (category) params.append("category", category);
+        if (search) params.append("search", search);
+        const res = await axios.get(API + "/products?" + params.toString());
+        setProducts(res.data.products || []);
+        setTotal(res.data.total || 0);
       } catch {
         setProducts([]);
+        setTotal(0);
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
-  }, [category, search]);
+  }, [category, search, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">
-        {category ? category.replace(/-/g, " ") : search ? "Search: " + search : "All Products"}
+    <div className="max-w-7xl mx-auto px-4 py-8 min-h-screen bg-[#0a0618] text-white">
+      <h1 className="text-2xl font-bold mb-2">
+        {category
+          ? category.replace(/-/g, " ")
+          : search
+          ? "Search: " + search
+          : "All Products"}
       </h1>
+      <p className="text-slate-400 mb-6">{total} products found</p>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => <div key={i} className="h-80 bg-slate-100 rounded-xl animate-pulse" />)}
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="h-80 bg-purple-950/50 rounded-xl animate-pulse"
+            />
+          ))}
         </div>
       ) : products.length === 0 ? (
         <p className="text-center text-slate-500 py-16">No products found</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {products.map(p => <ProductCard key={p.id} product={p} />)}
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
+      {total > limit && (
+        <div className="flex justify-center items-center gap-3 mt-10">
+          <Button
+            variant="outline"
+            className="border-purple-500 text-white hover:bg-purple-900"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-slate-300">
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            className="border-purple-500 text-white hover:bg-purple-900"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+          >
+            Next
+          </Button>
         </div>
       )}
     </div>
   );
 };
-
 const ProductDetailPage = () => {
   const { id } = useParams();
   const { addToCart } = useApp();
