@@ -1848,10 +1848,15 @@ async def run_product_recategorize():
         t = f"{p.get('name') or ''} {p.get('description') or ''}".lower()
         is_clothing = any(k in t for k in clothing_kw)
         if is_clothing:
-            new_cat = "mens-fashion" if any(k in t for k in men_kw) else "womens-fashion"
-        elif any(k in t for k in women_kw):
+            if any(k in t for k in women_kw) or "women" in t:
+                new_cat = "womens-fashion"
+            elif any(k in t for k in men_kw) and "women" not in t:
+                new_cat = "mens-fashion"
+            else:
+                new_cat = "womens-fashion"
+        elif any(k in t for k in women_kw) or "women" in t:
             new_cat = "womens-fashion"
-        elif any(k in t for k in men_kw):
+        elif any(k in t for k in men_kw) and "women" not in t:
             new_cat = "mens-fashion"
         elif any(k in t for k in electronics_kw) and "sleeve" not in t:
             new_cat = "electronics"
@@ -1870,7 +1875,7 @@ async def run_product_recategorize():
     return updated
 
 
-async def run_category_rebalance(max_per_category: int = 50):
+async def run_category_rebalance(max_per_category: int = 25):
     slugs = ["womens-fashion", "mens-fashion", "pet-supplies", "electronics", "health-beauty", "outdoor-sports"]
     deleted_total = 0
     for slug in slugs:
@@ -1883,7 +1888,7 @@ async def run_category_rebalance(max_per_category: int = 50):
 
 
 async def auto_sync_eprolo_products():
-    """Every 48 hours: pull 30 products, then recategorize + rebalance to 50."""
+    """Every 48 hours: pull 30 products, then recategorize + rebalance to 25."""
     while True:
         try:
             logger.info("Starting automatic EPROLO product sync (limit=30)...")
@@ -1891,7 +1896,7 @@ async def auto_sync_eprolo_products():
             logger.info("EPROLO product sync completed")
             updated = await run_product_recategorize()
             logger.info(f"Auto recategorize complete, updated={updated}")
-            deleted = await run_category_rebalance(50)
+            deleted = await run_category_rebalance(25)
             logger.info(f"Auto rebalance complete, deleted={deleted}")
         except Exception as e:
             logger.error(f"EPROLO sync error: {e}")
