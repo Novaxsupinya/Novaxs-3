@@ -1425,15 +1425,15 @@ async def admin_recategorize_products(admin=Depends(get_admin_user)):
 
         # 1) Apparel always goes to fashion (never pets/outdoor/electronics)
         if is_clothing:
-            if any(k in text for k in men_kw):
-                new_cat = "mens-fashion"
-            elif any(k in text for k in women_kw):
+            if any(k in text for k in women_kw) or "women" in text:
                 new_cat = "womens-fashion"
+            elif any(k in text for k in men_kw) and "women" not in text:
+                new_cat = "mens-fashion"
             else:
                 new_cat = "womens-fashion"
-        elif any(k in text for k in women_kw):
+      elif any(k in text for k in women_kw) or "women" in text:
             new_cat = "womens-fashion"
-        elif any(k in text for k in men_kw):
+        elif any(k in text for k in men_kw) and "women" not in text:
             new_cat = "mens-fashion"
         elif any(k in text for k in electronics_kw) and "sleeve" not in text:
             new_cat = "electronics"
