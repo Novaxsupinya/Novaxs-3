@@ -1775,16 +1775,105 @@ app.add_middleware(SecurityMiddleware)
 
 # ============ Auto Sync EPROLO Products ============
 
+async def run_product_recategorize():
+    """Shared rules — used by admin + auto-sync after each pull."""
+    clothing_kw = [
+        "hoodie", "hooded", "sweater", "cardigan", "jacket", "coat", "t-shirt",
+        "tshirt", "shirt", "pants", "jeans", "knit", "pullover", "sweatshirt",
+        "shorts", "trouser", "joggers", "windbreaker", "outerwear", "blouse",
+        "dress", "skirt", "leggings", "romper", "tracksuit", "sweatpants",
+        "camisole", "crop top", "two-piece", "2-piece", "3-piece",
+        "outfit set", "sportswear set", "piece set", "jumpsuit", "yoga", "bodysuit",
+    ]
+    women_kw = [
+        "women's", "womens ", "woman", "women ", "lady", "ladies", "female",
+        "girls'", "girls ", "girl's", "blouse", "dress", "skirt", "leggings",
+        "romper", "shapewear", "bra ", "lingerie", "panty", "corset",
+        "crop top", "camisole", "cat mom",
+    ]
+    men_kw = [
+        "men's", "mens ", " men ", "for men", "gentleman",
+        "boys'", "boys ", "boy's", "toddler kids",
+    ]
+    pet_kw = [
+        "pet bed", "pet toy", "pet food", "dog food", "cat food", "cat litter",
+        "dog leash", "cat leash", "pet leash", "for dogs", "for cats",
+        "dog collar", "cat collar", "pet collar", "puppy toy", "kitten toy",
+        "pet carrier", "dog bowl", "cat bowl", "pet shampoo", "dog treat",
+        "cat treat", "pet supplies", "pet odor", "pet hair", "cats and dogs",
+        "for cats and dogs", "pet fragrance",
+    ]
+    beauty_kw = [
+        "shampoo", "moisturizer", "toner", "serum", "skincare", "makeup",
+        "cosmetic", "lipstick", "mascara", "foundation", "facial", "exfoliat",
+        "hair care", "nail polish", "sunscreen", "lotion",
+    ]
+    electronics_kw = [
+        "earbud", "earbuds", "headphone", "headphones", "headset",
+        "bluetooth speaker", "iphone", "smartphone", "smart watch", "smartwatch",
+        "power bank", "usb cable", "drone", "microphone", "wireless mic",
+        "gaming mouse", "tablet pc", "led tv",
+    ]
+    outdoor_kw = [
+        "camping", "hiking", "tent", "sleeping bag", "fishing rod",
+        "bicycle", "bike rack", "climbing rope", "portable stove",
+    ]
+    products = await db.products.find(
+        {}, {"_id": 0, "id": 1, "name": 1, "description": 1, "category": 1}
+    ).to_list(5000)
+    updated = 0
+    for p in products:
+        t = f"{p.get('name') or ''} {p.get('description') or ''}".lower()
+        is_clothing = any(k in t for k in clothing_kw)
+        if is_clothing:
+            new_cat = "mens-fashion" if any(k in t for k in men_kw) else "womens-fashion"
+        elif any(k in t for k in women_kw):
+            new_cat = "womens-fashion"
+        elif any(k in t for k in men_kw):
+            new_cat = "mens-fashion"
+        elif any(k in t for k in electronics_kw) and "sleeve" not in t:
+            new_cat = "electronics"
+        elif any(k in t for k in pet_kw):
+            new_cat = "pet-supplies"
+        elif any(k in t for k in beauty_kw):
+            new_cat = "health-beauty"
+        elif any(k in t for k in outdoor_kw):
+            new_cat = "outdoor-sports"
+        else:
+            old = p.get("category") or ""
+            new_cat = "womens-fashion" if old in ("pet-supplies", "electronics", "outdoor-sports") else (old or "womens-fashion")
+        if p.get("category") != new_cat:
+            await db.products.update_one({"id": p["id"]}, {"$set": {"category": new_cat}})
+            updated += 1
+    return updated
+
+
+async def run_category_rebalance(max_per_category: int = 50):
+    slugs = ["womens-fashion", "mens-fashion", "pet-supplies", "electronics", "health-beauty", "outdoor-sports"]
+    deleted_total = 0
+    for slug in slugs:
+        products = await db.products.find({"category": slug}, {"_id": 0, "id": 1}).sort("created_at", -1).to_list(5000)
+        extra_ids = [p["id"] for p in products[max_per_category:]]
+        if extra_ids:
+            result = await db.products.delete_many({"id": {"$in": extra_ids}})
+            deleted_total += result.deleted_count
+    return deleted_total
+
+
 async def auto_sync_eprolo_products():
-    """Background task to auto-sync EPROLO products every 6 hours"""
+    """Every 48 hours: pull 30 products, then recategorize + rebalance to 50."""
     while True:
         try:
-            logger.info("Starting automatic EPROLO product sync...")
-            await sync_products_from_eprolo("", 200)
+            logger.info("Starting automatic EPROLO product sync (limit=30)...")
+            await sync_products_from_eprolo("", 30)
             logger.info("EPROLO product sync completed")
+            updated = await run_product_recategorize()
+            logger.info(f"Auto recategorize complete, updated={updated}")
+            deleted = await run_category_rebalance(50)
+            logger.info(f"Auto rebalance complete, deleted={deleted}")
         except Exception as e:
             logger.error(f"EPROLO sync error: {e}")
-        await asyncio.sleep(6 * 60 * 60)  # 6 hours
+        await asyncio.sleep(48 * 60 * 60)  # 48 hours
 
 async def auto_sync_tracking():
     """Background task to sync tracking from EPROLO every 30 mins"""
