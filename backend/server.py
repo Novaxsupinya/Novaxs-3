@@ -1875,7 +1875,7 @@ async def run_product_recategorize():
     return updated
 
 
-async def run_category_rebalance(max_per_category: int = 25):
+async def run_category_rebalance(max_per_category: int = 50):
     slugs = ["womens-fashion", "mens-fashion", "pet-supplies", "electronics", "health-beauty", "outdoor-sports"]
     deleted_total = 0
     for slug in slugs:
@@ -1896,7 +1896,7 @@ async def auto_sync_eprolo_products():
             logger.info("EPROLO product sync completed")
             updated = await run_product_recategorize()
             logger.info(f"Auto recategorize complete, updated={updated}")
-            deleted = await run_category_rebalance(25)
+            deleted = await run_category_rebalance(50)
             logger.info(f"Auto rebalance complete, deleted={deleted}")
         except Exception as e:
             logger.error(f"EPROLO sync error: {e}")
