@@ -519,8 +519,30 @@ async def get_products(
     }
 @api_router.get("/products/featured")
 async def get_featured_products(limit: int = 8):
-    products = await db.products.find({"is_active": True}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
-    return products
+    """Balanced mix across all 6 categories (not only newest fashion)."""
+    slugs = [
+        "womens-fashion", "mens-fashion", "pet-supplies",
+        "electronics", "health-beauty", "outdoor-sports",
+    ]
+    per = max(1, limit // len(slugs))
+    mixed = []
+    for slug in slugs:
+        batch = await db.products.find(
+            {"is_active": True, "category": slug}, {"_id": 0}
+        ).sort("created_at", -1).limit(per).to_list(per)
+        mixed.extend(batch)
+    if len(mixed) < limit:
+        seen = {p.get("id") for p in mixed}
+        extra = await db.products.find(
+            {"is_active": True}, {"_id": 0}
+        ).sort("created_at", -1).limit(limit * 2).to_list(limit * 2)
+        for p in extra:
+            if p.get("id") not in seen:
+                mixed.append(p)
+                seen.add(p.get("id"))
+            if len(mixed) >= limit:
+                break
+    return mixed[:limit]
 
 
 @api_router.get("/products/{product_id}")
